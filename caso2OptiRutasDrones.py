@@ -225,4 +225,19 @@ SolverFactory('mindtpy').solve(Model, mip_solver='glpk',nlp_solver='ipopt')
 
 # %%
 # Display x and y variables
-Model.display()
+Model.x.display()
+
+# %%
+
+import matplotlib.pyplot as plt
+
+# Plot the routes of the drones
+
+for d in range(n_drones_case_2):
+    for v in range(n_travels):
+        for i in amazon_delivery_drones_case_2.index:
+            for j in amazon_delivery_drones_case_2.index:
+                if Model.x[i, j, d, v]== 1:
+                    plt.plot([amazon_delivery_drones_case_2['X'][i], amazon_delivery_drones_case_2['X'][j]], [amazon_delivery_drones_case_2['Y'][i], amazon_delivery_drones_case_2['Y'][j]], 'k-')
+
+plt.plot(amazon_delivery_drones_case_2['X'], amazon_delivery_drones_case_2['Y'], 'ro')
