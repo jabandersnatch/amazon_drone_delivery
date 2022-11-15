@@ -170,5 +170,54 @@ Model = ConcreteModel()
 # %%
 
 # Create the Sets
+n_travels = 10
+# Create an x variable that is the size of nodesxnodesxn_dronesxn_travels
 
+Model.x = Var(amazon_delivery_drones.index, amazon_delivery_drones.index, range(n_drones), range(n_travels), domain=Binary)
+
+# Create an y variable that is the size of nodesxn_dronesxn_travels where the domain is all the rationals that are positive with 0
+
+Model.y = Var(amazon_delivery_drones.index, range(n_drones), range(n_travels), domain=NonNegativeReals)
+
+# Create the objective function
+
+Model.obj = Objective(expr=sum(distances[i,j]*Model.x[i, j, k, t] for i in amazon_delivery_drones.index for j in amazon_delivery_drones.index for k in range(n_drones) for t in range(n_travels)), sense=minimize)
+
+# Restriction 1: The dron cant travel more than the battery range
+def battrest(Model, d, v):
+    return sum (Model.x[i, j, d , v] * distances[i, j] <= battery_range[v] for i in amazon_delivery_drones.index for j in amazon_delivery_drones.index)
+
+Model.battrest = Constraint(range(n_drones), range(n_travels), rule=battrest)
+
+# Restriction 2: Delivery points must be supplied 
+def delivrest(Model, j):
+    return demand[i][1] == sum(Model.x[i, j, d, v] for i in amazon_delivery_drones.index for d in range(n_drones) for v in range(n_travels))
+
+Model.delivrest = Constraint(delivery_point_index, rule=delivrest)
+
+# Restriction 3: Ensure demand satisfaction
+def demandrest(Model, d, v):
+    return sum(Model.x[i, j, d, v] * Model.y[j,d,v] for i in amazon_delivery_drones.index for j in amazon_delivery_drones.index) <= 1
+
+Model.demandrest = Constraint(range(n_drones), range(n_travels), rule=demandrest)
+
+# Restriction 4: Ensure that the drone outs from the warehouse
+def warehouseoutrest(Model, j, d, v):
+    return sum(Model.x[i, j, d, v] for i in amazon_delivery_drones.index if i in warehouse_index) <= 1
+
+Model.warehouseoutrest = Constraint(amazon_delivery_drones.index, range(n_drones), range(n_travels), rule=warehouseoutrest)
+
+# Restriction 5: Ensure that the drone in from the warehouse
+def warehouseinrest(Model, j, d, v):
+    return sum(Model.x[i, j, d, v] for i in amazon_delivery_drones.index if i in warehouse_index) <= 1
+
+Model.warehouseinrest = Constraint(amazon_delivery_drones.index, range(n_drones), range(n_travels), rule=warehouseinrest)
+
+# Restriction 6: The drones must enter and exit all the delivery points
+def deliverypointrest(Model, j, d, v):
+    return sum(Model.x[i, j, d, v] for i in amazon_delivery_drones.index if i in delivery_point_index) == sum(Model.x[j, i, d, v] for i in amazon_delivery_drones.index if i in delivery_point_index)
+
+Model.deliverypointrest = Constraint(amazon_delivery_drones.index, range(n_drones), range(n_travels), rule=deliverypointrest)
+
+SolverFactory('glpk').solve(Model)
 
