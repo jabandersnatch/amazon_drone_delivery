@@ -193,7 +193,7 @@ Model.battrest = Constraint(range(n_drones_case_2), range(n_travels), rule=battr
 
 # Restriction 2: Delivery points must be supplied 
 def delivrest(Model, j):
-    return demand_case_2[j][1] == sum(Model.x[i, j, d, v] for i in amazon_delivery_drones_case_2.index for d in range(n_drones_case_2) for v in range(n_travels))
+    return demand_case_2[j][1] == sum(Model.x[i, j, d, v] * capacity_case_2[d] * Model.y[j,d,v] for i in amazon_delivery_drones_case_2.index for d in range(n_drones_case_2) for v in range(n_travels))
 
 Model.delivrest = Constraint(delivery_point_index_case_2, rule=delivrest)
 
