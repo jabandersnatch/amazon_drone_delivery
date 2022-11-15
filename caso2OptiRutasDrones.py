@@ -187,13 +187,13 @@ Model.obj = Objective(expr=sum(distances_case_2[i,j]*Model.x[i, j, k, t] for i i
 
 # Restriction 1: The dron cant travel more than the battery range
 def battrest(Model, d, v):
-    return sum (Model.x[i, j, d , v] * distances_case_2[i, j] <= battery_range_case_2[v] for i in amazon_delivery_drones_case_2.index for j in amazon_delivery_drones_case_2.index)
+    return sum (Model.x[i, j, d , v] * distances_case_2[i, j] for i in amazon_delivery_drones_case_2.index for j in amazon_delivery_drones_case_2.index) <= battery_range_case_2[v-1]
 
 Model.battrest = Constraint(range(n_drones_case_2), range(n_travels), rule=battrest)
 
 # Restriction 2: Delivery points must be supplied 
 def delivrest(Model, j):
-    return demand_case_2[i][1] == sum(Model.x[i, j, d, v] for i in amazon_delivery_drones_case_2.index for d in range(n_drones_case_2) for v in range(n_travels))
+    return demand_case_2[j][1] == sum(Model.x[i, j, d, v] for i in amazon_delivery_drones_case_2.index for d in range(n_drones_case_2) for v in range(n_travels))
 
 Model.delivrest = Constraint(delivery_point_index_case_2, rule=delivrest)
 
@@ -217,8 +217,12 @@ Model.warehouseinrest = Constraint(amazon_delivery_drones_case_2.index, range(n_
 
 # Restriction 6: The drones must enter and exit all the delivery points
 def deliverypointrest(Model, j, d, v):
-    return sum(Model.x[i, j, d, v] for i in amazon_delivery_drones_case_2.index if i in delivery_point_index_case_2) == sum(Model.x[j, i, d, v] for i in amazon_delivery_drones.index if i in delivery_point_index)
+    return sum(Model.x[i, j, d, v] for i in amazon_delivery_drones_case_2.index if i in delivery_point_index_case_2) == sum(Model.x[j, i, d, v] for i in amazon_delivery_drones_case_2.index if i in delivery_point_index_case_2)
 
 Model.deliverypointrest = Constraint(amazon_delivery_drones_case_2.index, range(n_drones_case_2), range(n_travels), rule=deliverypointrest)
 
-SolverFactory('glpk').solve(Model)
+SolverFactory('mindtpy').solve(Model, mip_solver='glpk',nlp_solver='ipopt')
+
+# %%
+# Display x and y variables
+Model.display()
