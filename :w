@@ -142,7 +142,7 @@ Model.droneOut = Constraint(drone_set, rule=droneOut)
 fullfillDemand: The drone must fullfill the demand
 '''
 def fullfillDemand(Model, d):
-    return capacity_proof_case[d] >= sum(Model.x[i, j, d] * Model.y[j,d] * demand_proof_case[i][1] for i in nodes_index for j in nodes_index)
+    return capacity_proof_case[d] >= sum(Model.x[i, j, d] * Model.y[j,d] * demand_proof_case[j][1] for i in nodes_index for j in nodes_index)
 Model.fullfillDemand = Constraint(drone_set, rule=fullfillDemand)
 
 '''
@@ -152,8 +152,8 @@ def toone(model,j,d):
     return model.y[j,d]<=1
 Model.toone = Constraint(nodes_index, drone_set, rule=toone)
 
-# Solve the model with a quadratic solver
-
+# Solve the model
+SolverFactory('mindtpy').solve(Model, mip_solver='glpk',nlp_solver='ipopt')
 
 # Print the results
 Model.display()
