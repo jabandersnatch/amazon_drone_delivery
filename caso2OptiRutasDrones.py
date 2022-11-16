@@ -256,17 +256,19 @@ def endisbeginning(Model, j, d, v):
         return Constrain.Skip
 
 
-Model.warehouseoutrest = Constraint(NodesIndex, DroneSet, range(n_travels), rule=endisbeginning)
+Model.endisbeginning = Constraint(NodesIndex, DroneSet, range(n_travels), rule=endisbeginning)
 
 # Restriction 8: Ensure that the drone starts where it left
 def cerotoone(Model,j,d,v):
         return 0<=Model.y[j,d,v]<=1
-Model.warehouseoutrest = Constraint(NodesIndex, DroneSet, range(n_travels), rule=cerotoone)
+Model.cerotoone = Constraint(NodesIndex, DroneSet, range(n_travels), rule=cerotoone)
 
 # Restriction 9: Ensure that the drone outs from the warehouse
 def droneOut(Model, d):
     return sum(Model.x[initial_position_case_2[d], i, d, 0] for i in NodesIndex)==1
-Model.warehouseoutrest = Constraint(drone_set, rule=warehouseoutrest)
+
+Model.droneOut = Constraint(drone_set, rule=warehouseoutrest)
+
 SolverFactory('mindtpy').solve(Model, mip_solver='glpk',nlp_solver='ipopt')
 
 # %%
