@@ -38,7 +38,7 @@ print('plot complete')
 
 # %%
 # Create a dictionary to store the distances
-from haversine import haversine, Unit
+from haversine import haversine
 distances_case_2 = {}
 # Iterate over the rows of the dataframe
 for index, row in amazon_delivery_drones_case_2.iterrows():
@@ -158,7 +158,7 @@ charging_station_index_case_2 = amazon_delivery_drones_case_2[amazon_delivery_dr
 """
 Created on Wen Nov 02 09:52:16 2022
 
-@author: Juan Andrés Méndez G. Erich G
+@author: Juan Andrés Méndez G. Erich Giusseppe Soto Parada.
 """
 from pyomo.environ import *
 import matplotlib.pyplot as plt
@@ -200,7 +200,7 @@ Model.battrest = Constraint(DroneSet, range(n_travels), rule=battrest)
 def delivrest(Model, j):
     return demand_case_2[j][1] == sum(Model.x[i, j, d, v] * capacity_case_2[d] * Model.y[j,d,v] for i in NodesIndex for d in DroneSet for v in range(n_travels))
 
-Model.delivrest = Constraint(delivery_point_index_case_2, rule=delivrest)
+Model.delivrest = Constraint(amazon_delivery_drones_case_2.index, rule=delivrest)
 
 # Restriction 3: Ensure demand satisfaction
 def demandrest(Model, d, v):
