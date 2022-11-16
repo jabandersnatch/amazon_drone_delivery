@@ -23,10 +23,13 @@ initial_position = 0
 Create a data dictionary with 4 nodes, 
 one node is the warehouse the other two are delivery_point 
 the location is set in the USA
+the demand is set in the same order as the nodes
 '''
 data = {'node_type': ['warehouse', 'delivery_point', 'delivery_point'],
         'latitude': [42.7173, 40.7128, 41.8781],
-        'longitude': [-73.9897, -74.0060, -87.6298]}
+        'longitude': [-73.9897, -74.0060, -87.6298],
+        'demand': [0, 1, 1]
+        }
 
 proof_case = pd.DataFrame(data)
 
@@ -49,7 +52,28 @@ mean_battery_range = mean_distance_proof_case * 4
 
 n_drones = 1
 
-battery_range_case_2 = 
+battery_range_case_2 = np.round(np.random.uniform(0.5 * mean_battery_range, 1.5 * mean_battery_range, n_drones))
+
+# Create the demand dictionary
+demand_proof_case = {}
+for index, row in proof_case.iterrows():
+    demand_proof_case[index] = (f'{row["node_type"]}_{index}',np.round(row['demand'],0))
+# Create the capacity dictionary
+
+# Find the mean demand  
+mean_demand_proof_case = 0
+for index, row in proof_case.iterrows():
+    if row['node_type'] == 'delivery_point':
+        mean_demand_proof_case += row['demand']
+
+mean_demand_proof_case = np.round(mean_demand_proof_case / len(proof_case[proof_case['node_type']== 'delivery_point']), 0)
+
+mean_capacity_dron = mean_demand_proof_case * 4
+
+capacity_proof_case = np.round(np.random.uniform(0.5 * mean_capacity_dron, 1.5 * mean_capacity_dron, n_drones))
+
+warehouse_index_proof_case = proof_case[proof_case['node_type'] == 'warehouse'].index
+delivery_point_index_proof_case = proof_case[proof_case['node_type'] == 'delivery_point'].index
 
 
 # Drone warehouse final battery
@@ -87,7 +111,7 @@ Model.battrest = Constraint(drone_set, range(n_travels), rule=battrest)
 
 # Restriction 2: Delivery points must be supplied 
 def delivrest(Model, j):
-    return demand_case_2[j][1] == sum(Model.x[i, j, d, v] * capacity_case_2[d] * Model.y[j,d,v] for i in nodes_index for d in drone_set for v in range(n_travels))
+    return demand_proof_case[j][1] == sum(Model.x[i, j, d, v] * capacity_proof_case[d] * Model.y[j,d,v] for i in nodes_index for d in drone_set for v in range(n_travels))
 
 
 Model.delivrest = Constraint(proof_case.index, rule=delivrest)
@@ -101,7 +125,7 @@ Model.demandrest = Constraint(drone_set, range(n_travels), rule=demandrest)
 
 # Restriction 4: Ensure that the drone outs from the warehouse
 def warehouseoutrest(Model, i, d, v):
-    if i in warehouse_index_case_2:
+    if i in warehouse_index_proof_case:
         return sum(Model.x[i, j, d, v] for j in nodes_index ) <= 1
     else:
         return Constraint.Skip
@@ -110,7 +134,8 @@ Model.warehouseoutrest = Constraint(nodes_index, drone_set, range(n_travels), ru
 
 # Restriction 5: Ensure that the drone in from the warehouse
 def warehouseinrest(Model, j, d, v):
-    if j in warehouse_index_case_2:
+    if j in warehouse_index_proof_case:
+        print('Entrooo')
         return sum(Model.x[i, j, d, v] for i in nodes_index) <= 1
     else:
         return Constraint.Skip
@@ -119,7 +144,7 @@ Model.warehouseinrest = Constraint(nodes_index, drone_set, range(n_travels), rul
 
 # Restriction 6: The drones must enter and exit all the delivery points
 def deliverypointrest(Model, j, d, v):
-    if i not in warehouse_index_case_2:
+    if i not in warehouse_index_proof_case:
         return sum(Model.x[i, j, d, v] for i in nodes_index) == sum(Model.x[j, i, d, v] for i in nodes_index if i in proof_case)
     else:
         return Constraint.Skip
@@ -147,8 +172,8 @@ for d in range(n_drones):
 
 # Plot the nodes of the graph with a different color for the warehouses and the delivery points
 
-plt.plot(proof_case['longitude'][warehouse_index_case_2], proof_case['latitude'][warehouse_index_case_2], 'ro')
-plt.plot(proof_case['longitude'][delivery_point_index_case_2], proof_case['latitude'][delivery_point_index_case_2], 'bo')
+plt.plot(proof_case['longitude'][warehouse_index_proof_case], proof_case['latitude'][warehouse_index_proof_case], 'ro')
+plt.plot(proof_case['longitude'][delivery_point_index_proof_case], proof_case['latitude'][delivery_point_index_proof_case], 'bo')
 
 # Create the legend
 plt.legend(['Warehouse', 'Delivery Point'])

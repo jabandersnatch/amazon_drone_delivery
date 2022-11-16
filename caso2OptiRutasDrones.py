@@ -48,7 +48,7 @@ for index, row in amazon_delivery_drones_case_2.iterrows():
 
            distance = haversine((row['latitude'], row['longitude']), (row2['latitude'], row2['longitude']))
         else:
-            distance=999
+            distance=99
 
         # Add the distance to the dictionary
         distances_case_2[(index, index2)] = distance
@@ -259,9 +259,13 @@ def endisbeginning(Model, j, d, v):
 Model.endisbeginning = Constraint(nodes_index, drone_set, range(n_travels), rule=endisbeginning)
 
 # Restriction 8: Ensure that the drone starts where it left
-def cerotoone(Model,j,d,v):
-        return 0<=Model.y[j,d,v]<=1
-Model.cerotoone = Constraint(nodes_index, drone_set, range(n_travels), rule=cerotoone)
+def toone(Model,j,d,v):
+    return Model.y[j,d,v]<=1
+Model.toone = Constraint(nodes_index, drone_set, range(n_travels), rule=toone)
+
+def ceroto(Model,j,d,v):
+    return Model.y[j,d,v]>=0
+Model.ceroto = Constraint(nodes_index, drone_set, range(n_travels), rule=ceroto)
 
 # Restriction 9: Ensure that the drone outs from the warehouse
 def droneOut(Model, d):
