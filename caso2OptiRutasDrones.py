@@ -152,6 +152,15 @@ delivery_point_index_case_2 = amazon_delivery_drones_case_2[amazon_delivery_dron
 
 charging_station_index_case_2 = amazon_delivery_drones_case_2[amazon_delivery_drones_case_2['NODE_TYPE_charging_station'] == 1].index
 
+# Create an dictionary with size of warehouse x n_drones_case_2 this is a binary table that tells the initial position of the drones
+initial_position_case_2 = {}
+# randomize the initial position of the drones
+
+for i in range(n_drones_case_2):
+    initial_position_case_2[i] = np.random.choice(warehouse_index_case_2)
+
+# Print the initial position of the drones
+
 # %%
 
 """
@@ -167,6 +176,8 @@ import os
 
 os.system("clear")
 Model = ConcreteModel()
+
+print(initial_position_case_2)
 
 # %%
 drone_set=range(n_drones_case_2)
