@@ -103,62 +103,6 @@ Model.y = Var(nodes_index, drone_set, range(n_travels), domain=NonNegativeReals)
 
 Model.obj = Objective(expr=sum(distances_proof_case[i,j]*Model.x[i, j, k, t] for i in nodes_index for j in nodes_index for k in drone_set for t in range(n_travels)), sense=maximize)
 
-# Restriction 1: The dron cant travel more than the battery range
-def battrest(Model, d, v):
-    return sum (Model.x[i, j, d , v] * distances_proof_case[i, j] for i in nodes_index for j in nodes_index) <= battery_range_case_2[v-1]
-
-Model.battrest = Constraint(drone_set, range(n_travels), rule=battrest)
-
-# Restriction 2: Delivery points must be supplied 
-def delivrest(Model, j):
-    return demand_proof_case[j][1] == sum(Model.x[i, j, d, v] * capacity_proof_case[d] * Model.y[j,d,v] for i in nodes_index for d in drone_set for v in range(n_travels))
-
-
-Model.delivrest = Constraint(proof_case.index, rule=delivrest)
-
-
-# Restriction 3: Ensure demand satisfaction
-def demandrest(Model, d, v):
-    return sum(Model.x[i, j, d, v] * Model.y[j,d,v] for i in nodes_index for j in nodes_index) <= 1
-
-Model.demandrest = Constraint(drone_set, range(n_travels), rule=demandrest)
-
-# Restriction 4: Ensure that the drone outs from the warehouse
-def warehouseoutrest(Model, i, d, v):
-    if i in warehouse_index_proof_case:
-        return sum(Model.x[i, j, d, v] for j in nodes_index ) <= 1
-    else:
-        return Constraint.Skip
-
-Model.warehouseoutrest = Constraint(nodes_index, drone_set, range(n_travels), rule=warehouseoutrest)
-
-# Restriction 5: Ensure that the drone in from the warehouse
-def warehouseinrest(Model, j, d, v):
-    if j in warehouse_index_proof_case:
-        print('Entrooo')
-        return sum(Model.x[i, j, d, v] for i in nodes_index) <= 1
-    else:
-        return Constraint.Skip
-
-Model.warehouseinrest = Constraint(nodes_index, drone_set, range(n_travels), rule=warehouseinrest)
-
-# Restriction 6: The drones must enter and exit all the delivery points
-def deliverypointrest(Model, j, d, v):
-    if i not in warehouse_index_proof_case:
-        return sum(Model.x[i, j, d, v] for i in nodes_index) == sum(Model.x[j, i, d, v] for i in nodes_index if i in proof_case)
-    else:
-        return Constraint.Skip
-
-Model.deliverypointrest = Constraint(nodes_index, drone_set, range(n_travels), rule=deliverypointrest)
-
-SolverFactory('mindtpy').solve(Model, mip_solver='glpk',nlp_solver='ipopt')
-
-# %%
-# Display x and y variables
-Model.x.display()
-
-# %%
-
 import matplotlib.pyplot as plt
 
 # Plot the routes of the drones
