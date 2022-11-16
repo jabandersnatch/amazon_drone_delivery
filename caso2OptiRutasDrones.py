@@ -89,12 +89,12 @@ with open('distances_case_2.csv', 'w') as f:
 # Create the DEMAND dictionary
 demand_case_2 = {}
 for index, row in amazon_delivery_drones_case_2.iterrows():
-    demand_case_2[index] = (f'{row["NODE_TYPE"]}_{index}',row['DEMAND'])
+    demand_case_2[index] = (f'{row["NODE_TYPE"]}_{index}',np.round(row['DEMAND'],0))
 
 # Create the DEMAND csv file
 with open('demand_case_2.csv', 'w') as f:
     for key in demand_case_2.keys():
-        f.write(f'{demand_case_2[key][0]}\t{np.round(demand_case_2[key][1],0)}\n')
+        f.write(f'{demand_case_2[key][0]}\t{demand_case_2[key][1]}\n')
 
 # %%
 # Get the mean of distances
@@ -169,6 +169,9 @@ import os
 os.system("clear")
 Model = ConcreteModel()
 
+for i in demand_case_2.keys():
+    print(demand_case_2[i][0], demand_case_2[i][1])
+
 # %%
 
 # Create the Sets
@@ -237,7 +240,22 @@ for d in range(n_drones_case_2):
     for v in range(n_travels):
         for i in amazon_delivery_drones_case_2.index:
             for j in amazon_delivery_drones_case_2.index:
-                if Model.x[i, j, d, v]== 1:
-                    plt.plot([amazon_delivery_drones_case_2['X'][i], amazon_delivery_drones_case_2['X'][j]], [amazon_delivery_drones_case_2['Y'][i], amazon_delivery_drones_case_2['Y'][j]], 'k-')
+                if Model.x[i, j, d, v]() == 1:
+                    plt.plot([amazon_delivery_drones_case_2['longitude'][i], amazon_delivery_drones_case_2['longitude'][j]], [amazon_delivery_drones_case_2['latitude'][i], amazon_delivery_drones_case_2['latitude'][j]], 'k-')
 
-plt.plot(amazon_delivery_drones_case_2['X'], amazon_delivery_drones_case_2['Y'], 'ro')
+# Plot the nodes of the graph with a different color for the warehouses and the delivery points
+
+plt.plot(amazon_delivery_drones_case_2['longitude'][warehouse_index_case_2], amazon_delivery_drones_case_2['latitude'][warehouse_index_case_2], 'ro')
+plt.plot(amazon_delivery_drones_case_2['longitude'][delivery_point_index_case_2], amazon_delivery_drones_case_2['latitude'][delivery_point_index_case_2], 'bo')
+
+# Create the legend
+plt.legend(['Warehouse', 'Delivery Point'])
+
+# Create the axis
+
+plt.xlabel('Longitude')
+plt.ylabel('Latitude')
+
+# plt.title('Amazon Delivery Drones Case 2')
+
+plt.show()
