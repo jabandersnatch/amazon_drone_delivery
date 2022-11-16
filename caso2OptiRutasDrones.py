@@ -244,14 +244,23 @@ def deliverypointrest(Model, j, d, v):
 
 Model.deliverypointrest = Constraint(nodes_index, drone_set, range(n_travels), rule=deliverypointrest)
 
+
 # Restriction 7: Ensure that the drone starts where it left
-def endisbeginning(Model, j, d, v): 
+def endisbeginning(Model, j, d, v):
     if i in warehouse_index_case_2 and n_travels-1!=v: 
-        if sum(Model.x[i, j, d, v] for i in NodesIndex) == 1: 
-            return sum(Model.x[i, j, d, v]-Model.x[j,i, d, v+1] for i in NodesIndex )==0 
-        else: 
-            return Constrain.Skip 
-    else: return Constrain.Skip
+        if sum(Model.x[i, j, d, v] for i in NodesIndex) == 1:
+            return sum(Model.x[i, j, d, v]-Model.x[j,i, d, v+1] for i in NodesIndex )==0
+        else:
+            return Constrain.Skip
+    else:
+        return Constrain.Skip
+
+
+Model.warehouseoutrest = Constraint(NodesIndex, DroneSet, range(n_travels), rule=endisbeginning)
+
+def cerotoone(Model,j,d,v):
+        return 0<=Model.y[j,d,v]<=1
+Model.warehouseoutrest = Constraint(NodesIndex, DroneSet, range(n_travels), rule=cerotoone)
 
 SolverFactory('mindtpy').solve(Model, mip_solver='glpk',nlp_solver='ipopt')
 
