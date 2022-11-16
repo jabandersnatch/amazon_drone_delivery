@@ -173,56 +173,58 @@ for i in demand_case_2.keys():
     print(demand_case_2[i][0], demand_case_2[i][1])
 
 # %%
+DroneSet=range(n_drones_case_2)
+NodesIndex=amazon_delivery_drones_case_2.index
 
 # Create the Sets
 n_travels = 10
 # Create an x variable that is the size of nodesxnodesxn_dronesxn_travels
 
-Model.x = Var(amazon_delivery_drones_case_2.index, amazon_delivery_drones_case_2.index, range(n_drones_case_2), range(n_travels), domain=Binary)
+Model.x = Var(NodesIndex, NodesIndex, DroneSet, range(n_travels), domain=Binary)
 
 # Create an y variable that is the size of nodesxn_dronesxn_travels where the domain is all the rationals that are positive with 0
 
-Model.y = Var(amazon_delivery_drones_case_2.index, range(n_drones_case_2), range(n_travels), domain=NonNegativeReals)
+Model.y = Var(NodesIndex, DroneSet, range(n_travels), domain=NonNegativeReals)
 
 # Create the objective function
 
-Model.obj = Objective(expr=sum(distances_case_2[i,j]*Model.x[i, j, k, t] for i in amazon_delivery_drones_case_2.index for j in amazon_delivery_drones_case_2.index for k in range(n_drones_case_2) for t in range(n_travels)), sense=minimize)
+Model.obj = Objective(expr=sum(distances_case_2[i,j]*Model.x[i, j, k, t] for i in NodesIndex for j in NodesIndex for k in DroneSet for t in range(n_travels)), sense=minimize)
 
 # Restriction 1: The dron cant travel more than the battery range
 def battrest(Model, d, v):
-    return sum (Model.x[i, j, d , v] * distances_case_2[i, j] for i in amazon_delivery_drones_case_2.index for j in amazon_delivery_drones_case_2.index) <= battery_range_case_2[v-1]
+    return sum (Model.x[i, j, d , v] * distances_case_2[i, j] for i in NodesIndex for j in NodesIndex) <= battery_range_case_2[v-1]
 
-Model.battrest = Constraint(range(n_drones_case_2), range(n_travels), rule=battrest)
+Model.battrest = Constraint(DroneSet, range(n_travels), rule=battrest)
 
 # Restriction 2: Delivery points must be supplied 
 def delivrest(Model, j):
-    return demand_case_2[j][1] == sum(Model.x[i, j, d, v] * capacity_case_2[d] * Model.y[j,d,v] for i in amazon_delivery_drones_case_2.index for d in range(n_drones_case_2) for v in range(n_travels))
+    return demand_case_2[j][1] == sum(Model.x[i, j, d, v] * capacity_case_2[d] * Model.y[j,d,v] for i in NodesIndex for d in DroneSet for v in range(n_travels))
 
 Model.delivrest = Constraint(delivery_point_index_case_2, rule=delivrest)
 
 # Restriction 3: Ensure demand satisfaction
 def demandrest(Model, d, v):
-    return sum(Model.x[i, j, d, v] * Model.y[j,d,v] for i in amazon_delivery_drones_case_2.index for j in amazon_delivery_drones_case_2.index) <= 1
+    return sum(Model.x[i, j, d, v] * Model.y[j,d,v] for i in NodesIndex for j in NodesIndex) <= 1
 
-Model.demandrest = Constraint(range(n_drones_case_2), range(n_travels), rule=demandrest)
+Model.demandrest = Constraint(DroneSet, range(n_travels), rule=demandrest)
 
 # Restriction 4: Ensure that the drone outs from the warehouse
 def warehouseoutrest(Model, j, d, v):
-    return sum(Model.x[i, j, d, v] for i in amazon_delivery_drones_case_2.index if i in warehouse_index_case_2) <= 1
+    return sum(Model.x[i, j, d, v] for i in NodesIndex if i in warehouse_index_case_2) <= 1
 
-Model.warehouseoutrest = Constraint(amazon_delivery_drones_case_2.index, range(n_drones_case_2), range(n_travels), rule=warehouseoutrest)
+Model.warehouseoutrest = Constraint(NodesIndex, DroneSet, range(n_travels), rule=warehouseoutrest)
 
 # Restriction 5: Ensure that the drone in from the warehouse
 def warehouseinrest(Model, j, d, v):
-    return sum(Model.x[i, j, d, v] for i in amazon_delivery_drones_case_2.index if i in warehouse_index_case_2) <= 1
+    return sum(Model.x[i, j, d, v] for i in NodesIndex if i in warehouse_index_case_2) <= 1
 
-Model.warehouseinrest = Constraint(amazon_delivery_drones_case_2.index, range(n_drones_case_2), range(n_travels), rule=warehouseinrest)
+Model.warehouseinrest = Constraint(NodesIndex, DroneSet, range(n_travels), rule=warehouseinrest)
 
 # Restriction 6: The drones must enter and exit all the delivery points
 def deliverypointrest(Model, j, d, v):
-    return sum(Model.x[i, j, d, v] for i in amazon_delivery_drones_case_2.index if i in delivery_point_index_case_2) == sum(Model.x[j, i, d, v] for i in amazon_delivery_drones_case_2.index if i in delivery_point_index_case_2)
+    return sum(Model.x[i, j, d, v] for i in NodesIndex if i in delivery_point_index_case_2) == sum(Model.x[j, i, d, v] for i in NodesIndex if i in delivery_point_index_case_2)
 
-Model.deliverypointrest = Constraint(amazon_delivery_drones_case_2.index, range(n_drones_case_2), range(n_travels), rule=deliverypointrest)
+Model.deliverypointrest = Constraint(NodesIndex, DroneSet, range(n_travels), rule=deliverypointrest)
 
 SolverFactory('mindtpy').solve(Model, mip_solver='glpk',nlp_solver='ipopt')
 
