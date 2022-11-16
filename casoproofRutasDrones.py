@@ -152,8 +152,8 @@ def toone(model,j,d):
     return model.y[j,d]<=1
 Model.toone = Constraint(nodes_index, drone_set, rule=toone)
 
-# Solve the model with a quadratic solver
-
+# Solve the model with ipopt
+SolverFactory('ipopt').solve(Model)
 
 # Print the results
 Model.display()
