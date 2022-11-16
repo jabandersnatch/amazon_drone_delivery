@@ -56,7 +56,6 @@ for index, row in amazon_delivery_drones_case_2.iterrows():
 
 # %%
 # Create a csv file with the distances
-import csv
 
 last_index_case_2 = amazon_delivery_drones_case_2.index.max()
 
@@ -169,36 +168,33 @@ import os
 os.system("clear")
 Model = ConcreteModel()
 
-for i in demand_case_2.keys():
-    print(demand_case_2[i][0], demand_case_2[i][1])
-
 # %%
-DroneSet=range(n_drones_case_2)
-NodesIndex=amazon_delivery_drones_case_2.index
+drone_set=range(n_drones_case_2)
+nodes_index=amazon_delivery_drones_case_2.index
 
 # Create the Sets
 n_travels = 10
 # Create an x variable that is the size of nodesxnodesxn_dronesxn_travels
 
-Model.x = Var(NodesIndex, NodesIndex, DroneSet, range(n_travels), domain=Binary)
+Model.x = Var(nodes_index, nodes_index, drone_set, range(n_travels), domain=Binary)
 
 # Create an y variable that is the size of nodesxn_dronesxn_travels where the domain is all the rationals that are positive with 0
 
-Model.y = Var(NodesIndex, DroneSet, range(n_travels), domain=NonNegativeReals)
+Model.y = Var(nodes_index, drone_set, range(n_travels), domain=NonNegativeReals)
 
 # Create the objective function
 
-Model.obj = Objective(expr=sum(distances_case_2[i,j]*Model.x[i, j, k, t] for i in NodesIndex for j in NodesIndex for k in DroneSet for t in range(n_travels)), sense=minimize)
+Model.obj = Objective(expr=sum(distances_case_2[i,j]*Model.x[i, j, k, t] for i in nodes_index for j in nodes_index for k in drone_set for t in range(n_travels)), sense=minimize)
 
 # Restriction 1: The dron cant travel more than the battery range
 def battrest(Model, d, v):
-    return sum (Model.x[i, j, d , v] * distances_case_2[i, j] for i in NodesIndex for j in NodesIndex) <= battery_range_case_2[v-1]
+    return sum (Model.x[i, j, d , v] * distances_case_2[i, j] for i in nodes_index for j in nodes_index) <= battery_range_case_2[v-1]
 
-Model.battrest = Constraint(DroneSet, range(n_travels), rule=battrest)
+Model.battrest = Constraint(drone_set, range(n_travels), rule=battrest)
 
 # Restriction 2: Delivery points must be supplied 
 def delivrest(Model, j):
-    return demand_case_2[j][1] == sum(Model.x[i, j, d, v] * capacity_case_2[d] * Model.y[j,d,v] for i in NodesIndex for d in DroneSet for v in range(n_travels))
+    return demand_case_2[j][1] == sum(Model.x[i, j, d, v] * capacity_case_2[d] * Model.y[j,d,v] for i in nodes_index for d in drone_set for v in range(n_travels))
 
 
 Model.delivrest = Constraint(amazon_delivery_drones_case_2.index, rule=delivrest)
@@ -206,48 +202,38 @@ Model.delivrest = Constraint(amazon_delivery_drones_case_2.index, rule=delivrest
 
 # Restriction 3: Ensure demand satisfaction
 def demandrest(Model, d, v):
-    return sum(Model.x[i, j, d, v] * Model.y[j,d,v] for i in NodesIndex for j in NodesIndex) <= 1
+    return sum(Model.x[i, j, d, v] * Model.y[j,d,v] for i in nodes_index for j in nodes_index) <= 1
 
-Model.demandrest = Constraint(DroneSet, range(n_travels), rule=demandrest)
+Model.demandrest = Constraint(drone_set, range(n_travels), rule=demandrest)
 
 # Restriction 4: Ensure that the drone outs from the warehouse
 def warehouseoutrest(Model, i, d, v):
     if i in warehouse_index_case_2:
-        return sum(Model.x[i, j, d, v] for j in NodesIndex ) <= 1
+        return sum(Model.x[i, j, d, v] for j in nodes_index ) <= 1
     else:
-        return Constrain.Skip
+        return Constraint.Skip
 
-Model.warehouseoutrest = Constraint(NodesIndex, DroneSet, range(n_travels), rule=warehouseoutrest)
+Model.warehouseoutrest = Constraint(nodes_index, drone_set, range(n_travels), rule=warehouseoutrest)
 
 # Restriction 5: Ensure that the drone in from the warehouse
 def warehouseinrest(Model, j, d, v):
     if j in warehouse_index_case_2:
-        return sum(Model.x[i, j, d, v] for i in NodesIndex) <= 1
+        return sum(Model.x[i, j, d, v] for i in nodes_index) <= 1
     else:
-        return Constrain.Skip
+        return Constraint.Skip
 
-Model.warehouseinrest = Constraint(NodesIndex, DroneSet, range(n_travels), rule=warehouseinrest)
+Model.warehouseinrest = Constraint(nodes_index, drone_set, range(n_travels), rule=warehouseinrest)
 
 # Restriction 6: The drones must enter and exit all the delivery points
 def deliverypointrest(Model, j, d, v):
     if i not in warehouse_index_case_2:
-        return sum(Model.x[i, j, d, v] for i in NodesIndex) == sum(Model.x[j, i, d, v] for i in NodesIndex if i in amazon_delivery_drones_case_2)
+        return sum(Model.x[i, j, d, v] for i in nodes_index) == sum(Model.x[j, i, d, v] for i in nodes_index if i in amazon_delivery_drones_case_2)
     else:
-        return Constrain.Skip
+        return Constraint.Skip
 
-Model.deliverypointrest = Constraint(NodesIndex, DroneSet, range(n_travels), rule=deliverypointrest)
+Model.deliverypointrest = Constraint(nodes_index, drone_set, range(n_travels), rule=deliverypointrest)
 
 SolverFactory('mindtpy').solve(Model, mip_solver='glpk',nlp_solver='ipopt')
-
-
-# Restriction 7: Ensure that the drone starts where it left
-def endisbeginning(Model, j, d, v):
-    if i in warehouse_index_case_2:  
-        return sum(Model.x[i, j, d, v] for i in NodesIndex if i in warehouse_index_case_2) <= 1
-    else:
-        return Constrain.Skip
-
-Model.warehouseoutrest = Constraint(NodesIndex, DroneSet, range(n_travels), rule=warehouseoutrest)
 
 # %%
 # Display x and y variables
@@ -264,7 +250,7 @@ for d in range(n_drones_case_2):
         for i in amazon_delivery_drones_case_2.index:
             for j in amazon_delivery_drones_case_2.index:
                 if Model.x[i, j, d, v]() == 1:
-                    plt.plot([amazon_delivery_drones_case_2['longitude'][i], amazon_delivery_drones_case_2['longitude'][j]], [amazon_delivery_drones_case_2['latitude'][i], amazon_delivery_drones_case_2['latitude'][j]], 'k-')
+                    plt.plot([amazon_delivery_drones_case_2['latitude'][i], amazon_delivery_drones_case_2['latitude'][j]], [amazon_delivery_drones_case_2['longitude'][i], amazon_delivery_drones_case_2['longitude'][j]], 'k-')
 
 # Plot the nodes of the graph with a different color for the warehouses and the delivery points
 
