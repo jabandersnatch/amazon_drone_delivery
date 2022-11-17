@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 
 # %%
-amazon_delivery_drones_case_2 = pd.read_csv('AmazonDroneDeliveryCase2.csv', sep='\t', index_col=0)
+amazon_delivery_drones_case_2 = pd.read_csv('AmazonDroneDelivery.csv', sep='\t', index_col=0)
 
 # %% [markdown]
 # # Caso 2 plot global
@@ -115,11 +115,11 @@ print(f'Demanda media: {mean_demand_case_2}[kg]')
 
 # %%
 # Create a random uniform capacity for the drones
-n_drones_case_2 = len(amazon_delivery_drones_case_2[amazon_delivery_drones_case_2['NODE_TYPE'] == 'warehouse']) * 3
+n_drones_case_2 = len(amazon_delivery_drones_case_2[amazon_delivery_drones_case_2['NODE_TYPE'] == 'warehouse']) * 2
 capacity_case_2 = np.random.uniform(0.5*mean_demand_case_2, 1.5*mean_demand_case_2, n_drones_case_2)
 capacity_case_2 = np.round(capacity_case_2,0)
 # Create a random uniform battery range for the drones
-mean_battery_range_case_2 = 4*mean_distance_case_2
+mean_battery_range_case_2 = 10*mean_distance_case_2
 battery_range_case_2 = np.random.uniform(0.5*mean_battery_range_case_2, 1.5*mean_battery_range_case_2, n_drones_case_2)
 
 # %%
@@ -163,13 +163,13 @@ for i in range(n_drones_case_2):
 
 # %%
 
+
 """
 Created on Wen Nov 02 09:52:16 2022
 
 @author: Juan Andrés Méndez G. Erich G
 """
 from pyomo.environ import *
-import matplotlib.pyplot as plt
 import numpy as np
 
 import os
@@ -177,133 +177,115 @@ import os
 os.system("clear")
 Model = ConcreteModel()
 
-print(initial_position_case_2)
-
 # %%
 drone_set=range(n_drones_case_2)
 nodes_index=amazon_delivery_drones_case_2.index
 
-# Create the Sets
-n_travels = 10
 # Create an x variable that is the size of nodesxnodesxn_dronesxn_travels
 
-Model.x = Var(nodes_index, nodes_index, drone_set, range(n_travels), domain=Binary)
+Model.x = Var(nodes_index, nodes_index, drone_set, domain=Binary)
 
 # Create an y variable that is the size of nodesxn_dronesxn_travels where the domain is all the rationals that are positive with 0
 
-Model.y = Var(nodes_index, drone_set, range(n_travels), domain=NonNegativeReals)
+Model.y = Var(nodes_index, drone_set, domain=Binary)
 
 # Create the objective function
 
-Model.obj = Objective(expr=sum(distances_case_2[i,j]*Model.x[i, j, k, t] for i in nodes_index for j in nodes_index for k in drone_set for t in range(n_travels)), sense=minimize)
 
-# Restriction 1: The dron cant travel more than the battery range
-def battrest(Model, d, v):
-    return sum (Model.x[i, j, d , v] * distances_case_2[i, j] for i in nodes_index for j in nodes_index) <= battery_range_case_2[v-1]
+Model.obj = Objective(expr=sum(distances_case_2[i,j]*Model.x[i, j, d] for i in nodes_index for j in nodes_index for d in drone_set), sense=minimize)
 
-Model.battrest = Constraint(drone_set, range(n_travels), rule=battrest)
+# Create the constraints
 
-# Restriction 2: Delivery points must be supplied 
-def delivrest(Model, j):
-    return demand_case_2[j][1] == sum(Model.x[i, j, d, v] * capacity_case_2[d] * Model.y[j,d,v] for i in nodes_index for d in drone_set for v in range(n_travels))
+'''
+Warehouse out: The drone must leave the warehouse
+'''
+def warehouseOut(Model, i, d):
+    return sum(Model.x[i, j, d] for j in nodes_index)<=1
+Model.warehouseOut = Constraint(nodes_index, drone_set, rule=warehouseOut)
 
+'''
+Drone in: The drone must enter the warehouse
+'''
+def droneIn(Model, j, d):
+    return sum(Model.x[i, j, d] for i in nodes_index)<=1
+Model.droneIn = Constraint(nodes_index, drone_set, rule=droneIn)
 
-Model.delivrest = Constraint(amazon_delivery_drones_case_2.index, rule=delivrest)
-
-
-# Restriction 3: Ensure demand satisfaction
-def demandrest(Model, d, v):
-    return sum(Model.x[i, j, d, v] * Model.y[j,d,v] for i in nodes_index for j in nodes_index) <= 1
-
-Model.demandrest = Constraint(drone_set, range(n_travels), rule=demandrest)
-
-# Restriction 4: Ensure that the drone outs from the warehouse
-def warehouseoutrest(Model, i, d, v):
-    if i in warehouse_index_case_2:
-        return sum(Model.x[i, j, d, v] for j in nodes_index ) <= 1
+'''
+All that comes in must go out: The drones must leave all the nodes that it goes in 
+'''
+def allThatComesInMustGoOut(Model, j, d):
+    if j not in warehouse_index_case_2:
+        return sum(Model.x[i, j, d] for i in nodes_index) == sum(Model.x[j, k, d] for k in nodes_index)
     else:
         return Constraint.Skip
+Model.allThatComesInMustGoOut = Constraint(nodes_index, drone_set, rule=allThatComesInMustGoOut)
 
-Model.warehouseoutrest = Constraint(nodes_index, drone_set, range(n_travels), rule=warehouseoutrest)
-
-# Restriction 5: Ensure that the drone in from the warehouse
-def warehouseinrest(Model, j, d, v):
-    if j in warehouse_index_case_2:
-        return sum(Model.x[i, j, d, v] for i in nodes_index) <= 1
-    else:
-        return Constraint.Skip
-
-Model.warehouseinrest = Constraint(nodes_index, drone_set, range(n_travels), rule=warehouseinrest)
-
-# Restriction 6: The drones must enter and exit all the delivery points
-def deliverypointrest(Model, j, d, v):
-    if i not in warehouse_index_case_2:
-        return sum(Model.x[i, j, d, v] for i in nodes_index) == sum(Model.x[j, i, d, v] for i in nodes_index if i in amazon_delivery_drones_case_2)
-    else:
-        return Constraint.Skip
-
-Model.deliverypointrest = Constraint(nodes_index, drone_set, range(n_travels), rule=deliverypointrest)
-
-
-# Restriction 7: Ensure that the drone starts where it left
-def endisbeginning(Model, j, d, v):
-    if i in warehouse_index_case_2 and n_travels-1!=v: 
-        if sum(Model.x[i, j, d, v] for i in nodes_index) == 1:
-            return sum(Model.x[i, j, d, v]-Model.x[j,i, d, v+1] for i in nodes_index )==0
-        else:
-            return Constraint.Skip
-    else:
-        return Constraint.Skip
-
-
-Model.endisbeginning = Constraint(nodes_index, drone_set, range(n_travels), rule=endisbeginning)
-
-# Restriction 8: Ensure that the drone starts where it left
-def toone(Model,j,d,v):
-    return Model.y[j,d,v]<=1
-Model.toone = Constraint(nodes_index, drone_set, range(n_travels), rule=toone)
-
-def ceroto(Model,j,d,v):
-    return Model.y[j,d,v]>=0
-Model.ceroto = Constraint(nodes_index, drone_set, range(n_travels), rule=ceroto)
-
-# Restriction 9: Ensure that the drone outs from the warehouse
+'''
+The droneOut constraint is the constraint that the drone must leave the warehouse
+'''
 def droneOut(Model, d):
-    return sum(Model.x[initial_position_case_2[d], i, d, 0] for i in nodes_index)==1
+    return sum(Model.x[initial_position_case_2[d], i, d] for i in nodes_index)==1
 Model.droneOut = Constraint(drone_set, rule=droneOut)
 
-SolverFactory('mindtpy').solve(Model, mip_solver='glpk',nlp_solver='ipopt')
+'''
+fullfillDemand: The drone must fullfill the demand
+'''
+def fullfillDemand(Model, d):
+    return sum(Model.x[i,j,d]*Model.y[j,d]*demand_case_2[j][1] for j in nodes_index for i in nodes_index) <= capacity_case_2[d]
+Model.fullfillDemand = Constraint(drone_set, rule=fullfillDemand)
 
-# %%
-# Display x and y variables
-Model.x.display()
+'''
+All the delivery points must be visited
+'''
+def allDeliveryPointsMustBeVisited(Model, i):
+    if i in delivery_point_index_case_2:
+        return sum(Model.x[i,j,d] for j in nodes_index for d in drone_set)==1
+    else:
+        return Constraint.Skip
 
-# %%
+Model.allDeliveryPointsMustBeVisited = Constraint(nodes_index, rule=allDeliveryPointsMustBeVisited)
+
+'''
+All the delivery points must be exited
+'''
+def allDeliveryPointsMustBeExited(Model, j):
+    if j in delivery_point_index_case_2:
+        return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set)==1
+    else:
+        return Constraint.Skip
+    
+Model.allDeliveryPointsMustBeExited = Constraint(nodes_index, rule=allDeliveryPointsMustBeExited)
+
+# Solve the model with quadratic constraints
+
+SolverFactory('ipopt').solve(Model)
+
+
+# Print the results
+Model.display()
 
 import matplotlib.pyplot as plt
 
-# Plot the routes of the drones
+# Plot the routes of the drones in the case 2 use a different color for each drone
 
-for d in range(n_drones_case_2):
-    for v in range(n_travels):
-        for i in amazon_delivery_drones_case_2.index:
-            for j in amazon_delivery_drones_case_2.index:
-                if Model.x[i, j, d, v]() == 1:
-                    plt.plot([amazon_delivery_drones_case_2['latitude'][i], amazon_delivery_drones_case_2['latitude'][j]], [amazon_delivery_drones_case_2['longitude'][i], amazon_delivery_drones_case_2['longitude'][j]], 'k-')
+for d in drone_set:
+    for i in nodes_index:
+        for j in nodes_index:
+            if Model.x[i,j,d]()> 0:
+                plt.plot([amazon_delivery_drones_case_2['latitude'][i], amazon_delivery_drones_case_2['latitude'][j]], [amazon_delivery_drones_case_2['longitude'][i], amazon_delivery_drones_case_2['longitude'][j]], color='C'+str(d))
 
 # Plot the nodes of the graph with a different color for the warehouses and the delivery points
 
-plt.plot(amazon_delivery_drones_case_2['longitude'][warehouse_index_case_2], amazon_delivery_drones_case_2['latitude'][warehouse_index_case_2], 'ro')
-plt.plot(amazon_delivery_drones_case_2['longitude'][delivery_point_index_case_2], amazon_delivery_drones_case_2['latitude'][delivery_point_index_case_2], 'bo')
+plt.plot(amazon_delivery_drones_case_2['latitude'][warehouse_index_case_2], amazon_delivery_drones_case_2['longitude'][warehouse_index_case_2], 'ro', label = 'warehouse')
+plt.plot(amazon_delivery_drones_case_2['latitude'][delivery_point_index_case_2], amazon_delivery_drones_case_2['longitude'][delivery_point_index_case_2], 'bo', label = 'delivery_point')
 
-# Create the legend
-plt.legend(['Warehouse', 'Delivery Point'])
+plt.legend()
 
 # Create the axis
 
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
 
-# plt.title('Amazon Delivery Drones Case 2')
+plt.title('Amazon Delivery Drones Case 2 of Concept')
 
 plt.show()

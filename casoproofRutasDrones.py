@@ -4,7 +4,6 @@ Created on Wen Nov 02 09:52:16 2022
 @author: Juan Andrés Méndez G. Erich G
 """
 import pandas as pd
-from pyomo.core.base import label
 from pyomo.environ import *
 import matplotlib.pyplot as plt
 import numpy as np
@@ -88,8 +87,6 @@ for i in range(n_drones):
 os.system("clear")
 Model = ConcreteModel()
 
-print(initial_position)
-
 # %%
 drone_set=range(n_drones)
 nodes_index=proof_case.index
@@ -143,7 +140,7 @@ Model.droneOut = Constraint(drone_set, rule=droneOut)
 fullfillDemand: The drone must fullfill the demand
 '''
 def fullfillDemand(Model, d):
-    return sum(Model.x[i,j,d]*Model.y[j,d]*demand_proof_case[j][1] for j in nodes_index for j in nodes_index) <= capacity_proof_case[d]
+    return sum(Model.x[i,j,d]*Model.y[j,d]*demand_proof_case[j][1] for j in nodes_index for i in nodes_index) <= capacity_proof_case[d]
 Model.fullfillDemand = Constraint(drone_set, rule=fullfillDemand)
 
 '''
@@ -183,7 +180,7 @@ import matplotlib.pyplot as plt
 for d in drone_set:
     for i in nodes_index:
         for j in nodes_index:
-            if np.round(Model.x[i,j,d](),0) > 0:
+            if Model.x[i,j,d](),0 > 0:
                 plt.plot([proof_case['latitude'][i], proof_case['latitude'][j]], [proof_case['longitude'][i], proof_case['longitude'][j]], color='C'+str(d))
 
 # Plot the nodes of the graph with a different color for the warehouses and the delivery points
