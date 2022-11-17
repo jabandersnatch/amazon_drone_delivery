@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 
 # %%
-amazon_delivery_drones_case_2 = pd.read_csv('AmazonDroneDelivery.csv', sep='\t', index_col=0)
+amazon_delivery_drones_case_2 = pd.read_csv('AmazonDroneDeliveryCase2.csv', sep='\t', index_col=0)
 
 # %% [markdown]
 # # Caso 2 plot global
@@ -115,7 +115,7 @@ print(f'Demanda media: {mean_demand_case_2}[kg]')
 
 # %%
 # Create a random uniform capacity for the drones
-n_drones_case_2 = len(amazon_delivery_drones_case_2[amazon_delivery_drones_case_2['NODE_TYPE'] == 'warehouse']) * 2
+n_drones_case_2 = len(amazon_delivery_drones_case_2[amazon_delivery_drones_case_2['NODE_TYPE'] == 'warehouse']) * 1
 capacity_case_2 = np.random.uniform(0.5*mean_demand_case_2, 1.5*mean_demand_case_2, n_drones_case_2)
 capacity_case_2 = np.round(capacity_case_2,0)
 # Create a random uniform battery range for the drones
@@ -195,36 +195,19 @@ Model.y = Var(nodes_index, drone_set, domain=Binary)
 Model.obj = Objective(expr=sum(distances_case_2[i,j]*Model.x[i, j, d] for i in nodes_index for j in nodes_index for d in drone_set), sense=minimize)
 
 # Create the constraints
-
-'''
-Warehouse out: The drone must leave the warehouse
-'''
-def warehouseOut(Model, i, d):
-    return sum(Model.x[i, j, d] for j in nodes_index)<=1
-Model.warehouseOut = Constraint(nodes_index, drone_set, rule=warehouseOut)
-
 '''
 Drone in: The drone must enter the warehouse
 '''
-def droneIn(Model, j, d):
-    return sum(Model.x[i, j, d] for i in nodes_index)<=1
-Model.droneIn = Constraint(nodes_index, drone_set, rule=droneIn)
+def droneIn(Model, d):
+    return sum(Model.x[i, j, d] for i in nodes_index for j in warehouse_index_case_2)==1
+Model.droneIn = Constraint( drone_set, rule=droneIn)
 
-'''
-All that comes in must go out: The drones must leave all the nodes that it goes in 
-'''
-def allThatComesInMustGoOut(Model, j, d):
-    if j not in warehouse_index_case_2:
-        return sum(Model.x[i, j, d] for i in nodes_index) == sum(Model.x[j, k, d] for k in nodes_index)
-    else:
-        return Constraint.Skip
-Model.allThatComesInMustGoOut = Constraint(nodes_index, drone_set, rule=allThatComesInMustGoOut)
 
 '''
 The droneOut constraint is the constraint that the drone must leave the warehouse
 '''
 def droneOut(Model, d):
-    return sum(Model.x[initial_position_case_2[d], i, d] for i in nodes_index)==1
+    return sum(Model.x[initial_position_case_2[d], i, d] for i in nodes_index)>=1
 Model.droneOut = Constraint(drone_set, rule=droneOut)
 
 '''
@@ -256,8 +239,12 @@ def allDeliveryPointsMustBeExited(Model, j):
     
 Model.allDeliveryPointsMustBeExited = Constraint(nodes_index, rule=allDeliveryPointsMustBeExited)
 
-# Solve the model with quadratic constraints
 
+def batery(Model, d):
+    return sum(Model.x[i,j,d]*distances_case_2[i,j] for i in nodes_index for j in nodes_index )<=battery_range_case_2[d]
+
+
+Model.batery = Constraint(drone_set, rule=batery)
 SolverFactory('ipopt').solve(Model)
 
 
@@ -271,8 +258,8 @@ import matplotlib.pyplot as plt
 for d in drone_set:
     for i in nodes_index:
         for j in nodes_index:
-            if Model.x[i,j,d]()> 0:
-                plt.plot([amazon_delivery_drones_case_2['latitude'][i], amazon_delivery_drones_case_2['latitude'][j]], [amazon_delivery_drones_case_2['longitude'][i], amazon_delivery_drones_case_2['longitude'][j]], color='C'+str(d))
+            if Model.x[i,j,d]() > 0:
+                plt.plot([amazon_delivery_drones_case_2['latitude'][i], amazon_delivery_drones_case_2['latitude'][j]], [amazon_delivery_drones_case_2['longitude'][i], amazon_delivery_drones_case_2['longitude'][j]], color='k')
 
 # Plot the nodes of the graph with a different color for the warehouses and the delivery points
 
