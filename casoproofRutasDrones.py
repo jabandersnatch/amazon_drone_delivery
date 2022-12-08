@@ -133,7 +133,7 @@ All the delivery points must be visited by the drone
 '''
 def allDeliveryPointsMustBeVisited(Model, i):
     if i in delivery_point_index_proof_case:
-        return sum(Model.x[i,j,d] for j in nodes_index for d in drone_set) == 1
+        return sum(Model.x[i,j,d] for j in nodes_index for d in drone_set)-sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) == 0
     else:
         return Constraint.Skip
 
@@ -142,13 +142,14 @@ Model.allDeliveryPointsMustBeVisited = Constraint(nodes_index, rule=allDeliveryP
 '''
 All the delivery points must be exited by the same drone
 '''
+"""
 def allDeliveryPointsMustBeExited(Model, j):
     if j in delivery_point_index_proof_case:
         return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) == 1
     else:
         return Constraint.Skip
     
-Model.allDeliveryPointsMustBeExited = Constraint(nodes_index, rule=allDeliveryPointsMustBeExited)
+Model.allDeliveryPointsMustBeExited = Constraint(nodes_index, rule=allDeliveryPointsMustBeExited)"""
 
 '''
 The battery range constraint
