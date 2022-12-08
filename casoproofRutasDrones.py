@@ -130,13 +130,6 @@ def visitDeliveryPoints(Model, j):
     return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) == 1
 Model.visitDeliveryPoints = Constraint(delivery_point_index_proof_case, rule=visitDeliveryPoints)
 
-'''
-All the delivery points must be exited by a drone
-'''
-"""
-def exitDeliveryPoints(Model, j):
-    return sum(Model.x[j,i,d] for i in nodes_index for d in drone_set) == 1
-Model.exitDeliveryPoints = Constraint(delivery_point_index_proof_case, rule=exitDeliveryPoints)"""
 
 '''
 For each drone they must visit the same number of delivery points as they exit
@@ -153,11 +146,22 @@ def battery(Model, d):
 Model.batery = Constraint(drone_set, rule=battery)
 
 '''
-Bye bye cicles
+Delete sub-tours
 '''
-def byeCicles(Model, j):
-    return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) <= 1
-Model.byeCicles = Constraint(delivery_point_index_proof_case, rule=byeCicles)
+def subtour_elimination(Model, i, j):
+    if i not in warehouse_index_proof_case and j not in warehouse_index_proof_case:
+        return sum(Model.x[i,j,d] for d in drone_set) + sum(Model.x[j,i,d] for d in drone_set) <= 1
+    else:
+        return Constraint.Skip
+Model.subtour_elimination = Constraint(nodes_index, nodes_index, rule=subtour_elimination)
+
+
+'''
+A node can't be visited by himself
+'''
+def noSelfVisit(Model, i):
+    return sum(Model.x[i,i,d] for d in drone_set) == 0
+Model.noSelfVisit = Constraint(nodes_index, rule=noSelfVisit)
 
 # Solve the model with quadratic constraints using couenne
 SolverFactory('couenne').solve(Model, tee=True)
@@ -174,6 +178,8 @@ for d in drone_set:
         for j in nodes_index:
             if np.round(Model.x[i,j,d]()) == 1:
                 plt.plot([proof_case['latitude'][i], proof_case['latitude'][j]], [proof_case['longitude'][i], proof_case['longitude'][j]], color= 'C'+str(d))
+                # Plot the index of the node
+                plt.text(proof_case['latitude'][i], proof_case['longitude'][i], str(i))
 
 # Plot the nodes of the graph with a different color for the warehouses and the delivery points
 

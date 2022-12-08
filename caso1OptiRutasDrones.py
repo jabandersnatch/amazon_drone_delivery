@@ -1,223 +1,204 @@
-# %% [markdown]
-# ## Implementación de clustering para la selección de sucursales.
-# 
-
-# %%
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import plotly.graph_objects as go
-import plotly.express as px
-
-# %%
-amazon_delivery_drones = pd.read_csv('AmazonDroneDelivery.csv', sep='\t', index_col=0)
-
-# %% [markdown]
-# # Caso 1 plot global
-
-# %%
-fig = px.scatter_mapbox(amazon_delivery_drones,
-                        lat="latitude",
-                        lon="longitude",
-                        color="NODE_TYPE",
-                        title="Amazon Delivery Drones",
-                        zoom=5,
-
-                        )
-fig.update_layout(
-                    mapbox_center_lat = 4.570868,
-                    mapbox_center_lon = -74.297333,
-                    mapbox_style="open-street-map",
-                )
-fig.show()
-print('plot complete')
-
-# %% [markdown]
-# ## Hallar la matriz de distances entre las sucursales
-
-# %%
-# Create a dictionary to store the distances
-from haversine import haversine, Unit
-distances = {}
-# Iterate over the rows of the dataframe
-for index, row in amazon_delivery_drones.iterrows():
-    for index2, row2 in amazon_delivery_drones.iterrows():
-        # Calculate the distance between the two rows using the haversine formula
-        if index != index2:
-
-           distance = haversine((row['latitude'], row['longitude']), (row2['latitude'], row2['longitude']))
-        else:
-            distance=999
-
-        # Add the distance to the dictionary
-        distances[(index, index2)] = distance
-
-
-# %%
-# Create a csv file with the distances
-import csv
-print(amazon_delivery_drones.shape)
-
-last_index = amazon_delivery_drones.index.max()
-
-print(last_index)
-with open('distances.csv', 'w') as f:
-    f.write(' \t')
-    for index, row in amazon_delivery_drones.iterrows():
-        node = row['NODE_TYPE']
-        if  index == last_index:
-            f.write( f'{node}_{index}')
-        else:
-            f.write( f'{node}_{index}\t')
-
-    f.write('\n')
-
-    for index, row in amazon_delivery_drones.iterrows():
-        node = row['NODE_TYPE']
-        f.write(f'{node}_{index}\t')
-
-        for index2, row2 in amazon_delivery_drones.iterrows():
-            if index2 == last_index:
-                f.write(f'{np.round(distances[(index, index2)],3)}')
-            else:
-                f.write(f'{np.round(distances[(index, index2)],3)}\t')
-        count_col = 0
-        f.write('\n')
-# %%
-# Create the DEMAND dictionary
-demand = {}
-for index, row in amazon_delivery_drones.iterrows():
-    demand[index] = (f'{row["NODE_TYPE"]}_{index}',row['DEMAND'])
-
-# Create the DEMAND csv file
-with open('demand.csv', 'w') as f:
-    for key in demand.keys():
-        f.write(f'{demand[key][0]}\t{np.round(demand[key][1],0)}\n')
-# %%
-# Get the mean of distances
-mean_distance = np.mean(list(distances.values()))
-mean_distance = np.round(mean_distance, 0)
-# Get the mean of demands
-mean_demand = 0
-for index, row in amazon_delivery_drones.iterrows():
-    if row['NODE_TYPE'] == 'delivery_point':
-        mean_demand += row['DEMAND']
-
-mean_demand = mean_demand/len(amazon_delivery_drones[amazon_delivery_drones['NODE_TYPE'] == 'delivery_point'])
-
-
-mean_demand = np.round(mean_demand,0)
-
-print(f'Distancia media: {mean_distance}[km]')
-print(f'Demanda media: {mean_demand}[kg]')
-
-# %%
-# Create a random uniform capacity for the drones
-n_drones = len(amazon_delivery_drones[amazon_delivery_drones['NODE_TYPE'] == 'warehouse']) * 3
-capacity = np.random.uniform(0.5*mean_demand, 1.5*mean_demand, n_drones)
-capacity = np.round(capacity,0)
-# Create a random uniform battery range for the drones
-mean_battery_range = 4*mean_distance
-battery_range = np.random.uniform(0.5*mean_battery_range, 1.5*mean_battery_range, n_drones)
-# %%
-# Create the info_drones dictionary
-info_drone_dict = {}
-for i in range(n_drones):
-    info_drone_dict[i] = (f'drone_{i}', capacity[i], battery_range[i])
-
-# Create the info_drones.csv file
-with open('info_drones.csv', 'w') as f:
-    for key in info_drone_dict.keys():
-        f.write(f'{info_drone_dict[key][0]}\t{np.round(info_drone_dict[key][1],0)}\t{np.round(info_drone_dict[key][2],0)}\n')
-
-# %% [markdown]
-# # One hot encoding NODE_TYPE
-
-# %%
-# Make one hot encoding for the NODE_TYPE column
-amazon_delivery_drones = pd.get_dummies(amazon_delivery_drones, columns=['NODE_TYPE'])
-
-# Create an array that contains wich index is a warehouse
-
-warehouse_index = amazon_delivery_drones[amazon_delivery_drones['NODE_TYPE_warehouse'] == 1].index
-
-# Create an array that constains wich index is a delivery point
-
-delivery_point_index = amazon_delivery_drones[amazon_delivery_drones['NODE_TYPE_delivery_point'] == 1].index
-
-# Create an array that contains wich index is a charging station
-
-charging_station_index = amazon_delivery_drones[amazon_delivery_drones['NODE_TYPE_charging_station'] == 1].index
-
-
-# %%
-
 """
 Created on Wen Nov 02 09:52:16 2022
 
 @author: Juan Andrés Méndez G. Erich G
 """
+import pandas as pd
 from pyomo.environ import *
 import matplotlib.pyplot as plt
 import numpy as np
+from haversine import haversine, Unit
 
 import os
+
+
+## Variables creation Drone ware hosue  initial position
+init_drone_pos = {}
+
+initial_position = 0
+
+'''
+Create a data dictionary with 7 nodes, 
+2 are a warehouse the other 5 are delivery points
+the location is set in the USA
+the demand is set in the same order as the nodes
+'''
+data = {'node_type': ['warehouse', 'delivery_point', 'delivery_point', 'delivery_point', 'delivery_point', 'delivery_point', 'warehouse'],
+        'latitude': [42.7173, 41.9128, 41.8781, 31.7604, 39.9526, 32.7767, 42.723],
+        'longitude': [-73.9897, -78.0060, -90.6298, -90.3698, -75.1652, -96.7970, -90.9301],
+        'demand': [0, 1, 1, 2, 2, 3, 0]}
+
+initial_position_proof_case = {0: 0, 1: 6}
+
+proof_case = pd.DataFrame(data)
+
+# Create the distances between the nodes
+
+distances_proof_case = {}
+for i in proof_case.index:
+    for j in proof_case.index:
+        if i != j:
+            init_drone_pos[i] = (proof_case['latitude'][i], proof_case['longitude'][i])
+            init_drone_pos[j] = (proof_case['latitude'][j], proof_case['longitude'][j])
+            distances_proof_case[i, j] = haversine(init_drone_pos[i], init_drone_pos[j], unit=Unit.MILES)
+           
+        else:
+            distances_proof_case[i, j] = 999
+# Calculate the mean distance between the nodes
+
+mean_distance_proof_case = np.round(np.mean(list(distances_proof_case.values())), 0)
+
+mean_battery_range = mean_distance_proof_case * 3
+
+n_drones = 2
+
+battery_range_case_2 = [0.5 * mean_battery_range, 1.5 * mean_battery_range]
+
+# Create the demand dictionary
+demand_proof_case = {}
+for index, row in proof_case.iterrows():
+    demand_proof_case[index] = (f'{row["node_type"]}_{index}',np.round(row['demand'],0))
+# Create the capacity dictionary
+
+# Find the mean demand  
+mean_demand_proof_case = 0
+for index, row in proof_case.iterrows():
+    if row['node_type'] == 'delivery_point':
+        mean_demand_proof_case += row['demand']
+
+mean_demand_proof_case = np.round(mean_demand_proof_case / len(proof_case[proof_case['node_type']== 'delivery_point']), 0)
+
+mean_capacity_dron = mean_demand_proof_case * 3
+
+capacity_proof_case = [0.5 * mean_capacity_dron, 1.5 * mean_capacity_dron]
+
+warehouse_index_proof_case = proof_case[proof_case['node_type'] == 'warehouse'].index
+delivery_point_index_proof_case = proof_case[proof_case['node_type'] == 'delivery_point'].index
+
+
+
+# Make warehouse index a list
+# Drone warehouse final battery
+
+
 
 os.system("clear")
 Model = ConcreteModel()
 
 # %%
+drone_set=range(n_drones)
+nodes_index=proof_case.index
 
-# Create the Sets
-n_travels = 10
 # Create an x variable that is the size of nodesxnodesxn_dronesxn_travels
 
-Model.x = Var(amazon_delivery_drones.index, amazon_delivery_drones.index, range(n_drones), range(n_travels), domain=Binary)
+Model.x = Var(nodes_index, nodes_index, drone_set, domain=Binary)
 
 # Create an y variable that is the size of nodesxn_dronesxn_travels where the domain is all the rationals that are positive with 0
 
-Model.y = Var(amazon_delivery_drones.index, range(n_drones), range(n_travels), domain=NonNegativeReals)
+Model.y = Var(nodes_index, drone_set, domain=Binary)
 
 # Create the objective function
 
-Model.obj = Objective(expr=sum(distances[i,j]*Model.x[i, j, k, t] for i in amazon_delivery_drones.index for j in amazon_delivery_drones.index for k in range(n_drones) for t in range(n_travels)), sense=minimize)
+Model.obj = Objective(expr=sum(distances_proof_case[i,j]*Model.x[i, j, d] for i in nodes_index for j in nodes_index for d in drone_set), sense=minimize)
 
-# Restriction 1: The dron cant travel more than the battery range
-def battrest(Model, d, v):
-    return sum (Model.x[i, j, d , v] * distances[i, j] <= battery_range[v] for i in amazon_delivery_drones.index for j in amazon_delivery_drones.index)
+# Create the constraints
 
-Model.battrest = Constraint(range(n_drones), range(n_travels), rule=battrest)
+'''
+The droneOut constraint is the constraint that the drone must leave the warehouse
+'''
+def droneOut(Model, d):
+    return sum(Model.x[initial_position_proof_case[d], i, d] for i in nodes_index)==1
+Model.droneOut = Constraint(drone_set, rule=droneOut)
 
-# Restriction 2: Delivery points must be supplied 
-def delivrest(Model, j):
-    return demand[i][1] == sum(Model.x[i, j, d, v] for i in amazon_delivery_drones.index for d in range(n_drones) for v in range(n_travels))
+'''
+fullfillDemand: The drone must fullfill the demand
+'''
+def fullfillDemand(Model, d):
+    return sum(Model.x[i,j,d]*Model.y[j,d]*demand_proof_case[j][1] for j in nodes_index for i in nodes_index) <= capacity_proof_case[d]
+Model.fullfillDemand = Constraint(drone_set, rule=fullfillDemand)
 
-Model.delivrest = Constraint(delivery_point_index, rule=delivrest)
+'''
+For each delivery point the y variable must be 1
+'''
+def yDeliveryPoints(Model, j):
+    return sum(Model.y[j,d] for d in drone_set) == 1
+Model.yDeliveryPoints = Constraint(delivery_point_index_proof_case, rule=yDeliveryPoints)
 
-# Restriction 3: Ensure demand satisfaction
-def demandrest(Model, d, v):
-    return sum(Model.x[i, j, d, v] * Model.y[j,d,v] for i in amazon_delivery_drones.index for j in amazon_delivery_drones.index) <= 1
+'''
+All delivery points must be visited by a drone
+'''
+def visitDeliveryPoints(Model, j):
+    return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) == 1
+Model.visitDeliveryPoints = Constraint(delivery_point_index_proof_case, rule=visitDeliveryPoints)
 
-Model.demandrest = Constraint(range(n_drones), range(n_travels), rule=demandrest)
+def allDeliveryPointsMustBeExited(Model, j):
+    if j in delivery_point_index_proof_case:
+        return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) == 1
+    else:
+        return Constraint.Skip
+    
+Model.allDeliveryPointsMustBeExited = Constraint(nodes_index, rule=allDeliveryPointsMustBeExited)
 
-# Restriction 4: Ensure that the drone outs from the warehouse
-def warehouseoutrest(Model, j, d, v):
-    return sum(Model.x[i, j, d, v] for i in amazon_delivery_drones.index if i in warehouse_index) <= 1
+'''
+For each drone they must visit the same number of delivery points as they exit
+'''
+def visitExitDeliveryPoints(Model, d, j):
+    return sum(Model.x[i,j,d] for i in nodes_index) == sum(Model.x[j,i,d] for i in nodes_index)
+Model.visitExitDeliveryPoints = Constraint(drone_set, delivery_point_index_proof_case, rule=visitExitDeliveryPoints)
 
-Model.warehouseoutrest = Constraint(amazon_delivery_drones.index, range(n_drones), range(n_travels), rule=warehouseoutrest)
+'''
+The battery range constraint
+'''
+def battery(Model, d):
+    return sum(Model.x[i,j,d] * distances_proof_case[i,j] for i in nodes_index for j in nodes_index )<=battery_range_case_2[d]
+Model.batery = Constraint(drone_set, rule=battery)
 
-# Restriction 5: Ensure that the drone in from the warehouse
-def warehouseinrest(Model, j, d, v):
-    return sum(Model.x[i, j, d, v] for i in amazon_delivery_drones.index if i in warehouse_index) <= 1
+'''
+Delete sub-tours
+'''
+def subtour_elimination(Model, i, j):
+    if i not in warehouse_index_proof_case and j not in warehouse_index_proof_case:
+        return sum(Model.x[i,j,d] for d in drone_set) + sum(Model.x[j,i,d] for d in drone_set) <= 1
+    else:
+        return Constraint.Skip
+Model.subtour_elimination = Constraint(nodes_index, nodes_index, rule=subtour_elimination)
 
-Model.warehouseinrest = Constraint(amazon_delivery_drones.index, range(n_drones), range(n_travels), rule=warehouseinrest)
 
-# Restriction 6: The drones must enter and exit all the delivery points
-def deliverypointrest(Model, j, d, v):
-    return sum(Model.x[i, j, d, v] for i in amazon_delivery_drones.index if i in delivery_point_index) == sum(Model.x[j, i, d, v] for i in amazon_delivery_drones.index if i in delivery_point_index)
+'''
+A node can't be visited by himself
+'''
+def noSelfVisit(Model, i):
+    return sum(Model.x[i,i,d] for d in drone_set) == 0
+Model.noSelfVisit = Constraint(nodes_index, rule=noSelfVisit)
 
-Model.deliverypointrest = Constraint(amazon_delivery_drones.index, range(n_drones), range(n_travels), rule=deliverypointrest)
+# Solve the model with quadratic constraints using couenne
+SolverFactory('couenne').solve(Model, tee=True)
 
-SolverFactory('glpk').solve(Model)
 
+
+Model.display()
+
+# Plot the routes of the drones in the proof case use a different color for each drone
+
+for d in drone_set:
+    for i in nodes_index:
+        for j in nodes_index:
+            if np.round(Model.x[i,j,d](),0) == 1:
+                plt.plot([proof_case['latitude'][i], proof_case['latitude'][j]], [proof_case['longitude'][i], proof_case['longitude'][j]], color= 'C'+str(d))
+                # Plot the index of the node
+                plt.text(proof_case['latitude'][i], proof_case['longitude'][i], str(i))
+
+# Plot the nodes of the graph with a different color for the warehouses and the delivery points
+
+plt.plot(proof_case['latitude'][warehouse_index_proof_case], proof_case['longitude'][warehouse_index_proof_case], 'ro', label = 'warehouse')
+plt.plot(proof_case['latitude'][delivery_point_index_proof_case], proof_case['longitude'][delivery_point_index_proof_case], 'bo', label = 'delivery_point')
+
+
+# Create the axis
+
+plt.xlabel('Longitude')
+plt.ylabel('Latitude')
+
+plt.title('Amazon Delivery Drones Proof of Concept')
+
+plt.show()
