@@ -131,13 +131,13 @@ Model.fullfillDemand = Constraint(drone_set, rule=fullfillDemand)
 '''
 All the delivery points must be visited by the drone
 '''
-def allDeliveryPointsMustBeVisited(Model, i):
+def allDeliveryPointsMustBeVisited(Model, i,d):
     if i in delivery_point_index_proof_case:
-        return sum(Model.x[i,j,d] for j in nodes_index for d in drone_set)-sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) == 0
+        return sum(Model.x[i,j,d] for j in nodes_index )-sum(Model.x[j,i,d] for j in nodes_index ) == 0
     else:
         return Constraint.Skip
 
-Model.allDeliveryPointsMustBeVisited = Constraint(nodes_index, rule=allDeliveryPointsMustBeVisited)
+Model.allDeliveryPointsMustBeVisited = Constraint(nodes_index,drone_set, rule=allDeliveryPointsMustBeVisited)
 
 '''
 All the delivery points must be exited by the same drone
