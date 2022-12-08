@@ -133,9 +133,10 @@ Model.visitDeliveryPoints = Constraint(delivery_point_index_proof_case, rule=vis
 '''
 All the delivery points must be exited by a drone
 '''
+"""
 def exitDeliveryPoints(Model, j):
     return sum(Model.x[j,i,d] for i in nodes_index for d in drone_set) == 1
-Model.exitDeliveryPoints = Constraint(delivery_point_index_proof_case, rule=exitDeliveryPoints)
+Model.exitDeliveryPoints = Constraint(delivery_point_index_proof_case, rule=exitDeliveryPoints)"""
 
 '''
 For each drone they must visit the same number of delivery points as they exit
@@ -150,6 +151,13 @@ The battery range constraint
 def battery(Model, d):
     return sum(Model.x[i,j,d] * distances_proof_case[i,j] for i in nodes_index for j in nodes_index )<=battery_range_case_2[d]
 Model.batery = Constraint(drone_set, rule=battery)
+
+'''
+Bye bye cicles
+'''
+def byeCicles(Model, j):
+    return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) <= 1
+Model.byeCicles = Constraint(delivery_point_index_proof_case, rule=byeCicles)
 
 # Solve the model with quadratic constraints using couenne
 SolverFactory('couenne').solve(Model, tee=True)
