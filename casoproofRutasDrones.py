@@ -105,12 +105,6 @@ Model.obj = Objective(expr=sum(distances_proof_case[i,j]*Model.x[i, j, d] for i 
 
 # Create the constraints
 
-'''
-Warehouse out: The drone must leave the warehouse
-'''
-def warehouseOut(Model, i, d):
-    return sum(Model.x[i, j, d] for j in nodes_index)<=1
-Model.warehouseOut = Constraint(nodes_index, drone_set, rule=warehouseOut)
 
 '''
 Drone in: The drone must enter the warehouse
@@ -135,27 +129,26 @@ def fullfillDemand(Model, d):
 Model.fullfillDemand = Constraint(drone_set, rule=fullfillDemand)
 
 '''
-All the delivery points must be visited
+All the delivery points must be visited by the drone
 '''
 def allDeliveryPointsMustBeVisited(Model, i):
     if i in delivery_point_index_proof_case:
-        return sum(Model.x[i,j,d] for j in nodes_index for d in drone_set)==1
+        return sum(Model.x[i,j,d] for j in nodes_index for d in drone_set) == 1
     else:
         return Constraint.Skip
 
 Model.allDeliveryPointsMustBeVisited = Constraint(nodes_index, rule=allDeliveryPointsMustBeVisited)
 
 '''
-All the delivery points must be exited
+All the delivery points must be exited by the same drone
 '''
 def allDeliveryPointsMustBeExited(Model, j):
     if j in delivery_point_index_proof_case:
-        return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set)==1
+        return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) == 1
     else:
         return Constraint.Skip
     
 Model.allDeliveryPointsMustBeExited = Constraint(nodes_index, rule=allDeliveryPointsMustBeExited)
-
 
 '''
 The battery range constraint
@@ -165,42 +158,21 @@ def batery(Model, d):
 
 Model.batery = Constraint(drone_set, rule=batery)
 
-'''
-The drone can't go to the same node twice
-'''
-def droneCantGoToTheSameNodeTwice(Model, i, d):
-    if i not in warehouse_index_proof_case:
-        return sum(Model.x[i,j,d] for j in nodes_index)<=1
-    else:
-        return Constraint.Skip
-Model.droneCantGoToTheSameNodeTwice = Constraint(nodes_index, drone_set, rule=droneCantGoToTheSameNodeTwice)
+# Solve the model with quadratic constraints using couenne
+SolverFactory('couenne').solve(Model, tee=True)
 
-'''
-The drone can't go to the same node twice
-'''
-def droneCantGoToTheSameNodeTwice2(Model, j, d):
-    if j not in warehouse_index_proof_case:
-        return sum(Model.x[i,j,d] for i in nodes_index)<=1
-    else:
-        return Constraint.Skip
-Model.droneCantGoToTheSameNodeTwice2 = Constraint(nodes_index, drone_set, rule=droneCantGoToTheSameNodeTwice2)
-# Solve the model with quadratic constraints
-
-SolverFactory('ipopt').solve(Model)
 
 
 # Print the results
 Model.display()
-
-import matplotlib.pyplot as plt
 
 # Plot the routes of the drones in the proof case use a different color for each drone
 
 for d in drone_set:
     for i in nodes_index:
         for j in nodes_index:
-            if np.round(Model.x[i,j,d](),1) > 0:
-                plt.plot([proof_case['latitude'][i], proof_case['latitude'][j]], [proof_case['longitude'][i], proof_case['longitude'][j]], color='C'+str(d))
+            if Model.x[i,j,d]() == 1:
+                plt.plot([proof_case['latitude'][i], proof_case['latitude'][j]], [proof_case['longitude'][i], proof_case['longitude'][j]], color= 'C'+str(d))
 
 # Plot the nodes of the graph with a different color for the warehouses and the delivery points
 
