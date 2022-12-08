@@ -12,9 +12,7 @@ from haversine import haversine, Unit
 import os
 
 
-## Variables creation
-
-# Drone ware hosue  initial position
+## Variables creation Drone ware hosue  initial position
 init_drone_pos = {}
 
 initial_position = 0
@@ -48,11 +46,11 @@ for i in proof_case.index:
 
 mean_distance_proof_case = np.round(np.mean(list(distances_proof_case.values())), 0)
 
-mean_battery_range = mean_distance_proof_case * 2
+mean_battery_range = mean_distance_proof_case * 3
 
 n_drones = 2
 
-battery_range_case_2 = np.round(np.random.uniform(0.5 * mean_battery_range, 1.5 * mean_battery_range, n_drones))
+battery_range_case_2 = [0.5 * mean_battery_range, 1.5 * mean_battery_range]
 
 # Create the demand dictionary
 demand_proof_case = {}
@@ -68,18 +66,17 @@ for index, row in proof_case.iterrows():
 
 mean_demand_proof_case = np.round(mean_demand_proof_case / len(proof_case[proof_case['node_type']== 'delivery_point']), 0)
 
-mean_capacity_dron = mean_demand_proof_case * 2
+mean_capacity_dron = mean_demand_proof_case * 3
 
-capacity_proof_case = np.round(np.random.uniform(0.5 * mean_capacity_dron, 1.5 * mean_capacity_dron, n_drones))
+capacity_proof_case = [0.5 * mean_capacity_dron, 1.5 * mean_capacity_dron]
 
 warehouse_index_proof_case = proof_case[proof_case['node_type'] == 'warehouse'].index
 delivery_point_index_proof_case = proof_case[proof_case['node_type'] == 'delivery_point'].index
 
 
-initial_position_proof_case = {}
+initial_position_proof_case = {0: 0, 1: 5}
 
-for i in range(n_drones):
-    initial_position_proof_case[i] = np.random.choice(warehouse_index_proof_case)
+# Make warehouse index a list
 # Drone warehouse final battery
 
 
@@ -105,15 +102,6 @@ Model.obj = Objective(expr=sum(distances_proof_case[i,j]*Model.x[i, j, d] for i 
 
 # Create the constraints
 
-
-'''
-Drone in: The drone must enter the warehouse
-'''
-def droneIn(Model, j, d):
-    return sum(Model.x[i, j, d] for i in nodes_index)<=1
-Model.droneIn = Constraint(nodes_index, drone_set, rule=droneIn)
-
-
 '''
 The droneOut constraint is the constraint that the drone must leave the warehouse
 '''
@@ -129,35 +117,39 @@ def fullfillDemand(Model, d):
 Model.fullfillDemand = Constraint(drone_set, rule=fullfillDemand)
 
 '''
-All the delivery points must be visited by the drone
+For each delivery point the y variable must be 1
 '''
-def allDeliveryPointsMustBeVisited(Model, i,d):
-    if i in delivery_point_index_proof_case:
-        return sum(Model.x[i,j,d] for j in nodes_index )-sum(Model.x[j,i,d] for j in nodes_index ) == 0
-    else:
-        return Constraint.Skip
-
-Model.allDeliveryPointsMustBeVisited = Constraint(nodes_index,drone_set, rule=allDeliveryPointsMustBeVisited)
+def yDeliveryPoints(Model, j):
+    return sum(Model.y[j,d] for d in drone_set) == 1
+Model.yDeliveryPoints = Constraint(delivery_point_index_proof_case, rule=yDeliveryPoints)
 
 '''
-All the delivery points must be exited by the same drone
+All delivery points must be visited by a drone
 '''
-"""
-def allDeliveryPointsMustBeExited(Model, j):
-    if j in delivery_point_index_proof_case:
-        return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) == 1
-    else:
-        return Constraint.Skip
-    
-Model.allDeliveryPointsMustBeExited = Constraint(nodes_index, rule=allDeliveryPointsMustBeExited)"""
+def visitDeliveryPoints(Model, j):
+    return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) == 1
+Model.visitDeliveryPoints = Constraint(delivery_point_index_proof_case, rule=visitDeliveryPoints)
+
+'''
+All the delivery points must be exited by a drone
+'''
+def exitDeliveryPoints(Model, j):
+    return sum(Model.x[j,i,d] for i in nodes_index for d in drone_set) == 1
+Model.exitDeliveryPoints = Constraint(delivery_point_index_proof_case, rule=exitDeliveryPoints)
+
+'''
+For each drone they must visit the same number of delivery points as they exit
+'''
+def visitExitDeliveryPoints(Model, d, j):
+    return sum(Model.x[i,j,d] for i in nodes_index) == sum(Model.x[j,i,d] for i in nodes_index)
+Model.visitExitDeliveryPoints = Constraint(drone_set, delivery_point_index_proof_case, rule=visitExitDeliveryPoints)
 
 '''
 The battery range constraint
 '''
-def batery(Model, d):
+def battery(Model, d):
     return sum(Model.x[i,j,d] * distances_proof_case[i,j] for i in nodes_index for j in nodes_index )<=battery_range_case_2[d]
-
-Model.batery = Constraint(drone_set, rule=batery)
+Model.batery = Constraint(drone_set, rule=battery)
 
 # Solve the model with quadratic constraints using couenne
 SolverFactory('couenne').solve(Model, tee=True)
@@ -172,7 +164,7 @@ Model.display()
 for d in drone_set:
     for i in nodes_index:
         for j in nodes_index:
-            if Model.x[i,j,d]() == 1:
+            if np.round(Model.x[i,j,d]()) == 1:
                 plt.plot([proof_case['latitude'][i], proof_case['latitude'][j]], [proof_case['longitude'][i], proof_case['longitude'][j]], color= 'C'+str(d))
 
 # Plot the nodes of the graph with a different color for the warehouses and the delivery points
