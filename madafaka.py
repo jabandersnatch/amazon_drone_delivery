@@ -87,12 +87,14 @@ class Chromosome:
 
 
 class GeneticAlgoritm:
-    def __init__(self,inicial_popularion):
+    def __init__(self,inicial_popularion, prob):
         self.inicial_population=inicial_popularion
         inicial_values=[]
         for i in range(10):
             inicial_values.append(Chromosome(inicial_value()))
         inicial_values.sort(key=lambda chrome: chrome.value)
+        self.prob=prob
+
     def inicial_value(self):
         can=0
         while not can:
@@ -174,6 +176,21 @@ class GeneticAlgoritm:
             middlearr2 = matrix2[drone][:size_m2_midle]
             newArr = middlearr1 + middlearr2
         return newArr
+    
+    def mutation(self,matrix):
+        '''
+        Mutate the matrix
+        The mutation is done by changing the position of two elements in the matrix the matrix 
+        cant have the same element twice
+        '''
+        new_matrix=[]
+        for drone in range(matrix):
+            random_val1 = randint(0, len(matrix[drone]) - 1)
+            random_val2 = randint(0, len(matrix[drone]) - 1)
+            while random_val1==random_val2:
+                random_val2 = randint(0, len(matrix[drone]) - 1)
+            matrix[drone][random_val1],matrix[drone][random_val2]=matrix[drone][random_val2],matrix[drone][random_val1]
+        return matrix
 
 sol_per_pop = 50
 num_genes = len(function_inputs)
