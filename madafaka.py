@@ -92,8 +92,14 @@ class GeneticAlgoritm:
             inicial_values.append(Chromosome(self.inicial_value()))
         inicial_values.sort(key=lambda chrome: chrome.value)
         self.prob = prob
+    def bateryIsValid(self,matrix) -> bool:
+        for index in range(len(matrix)):
+            if sum(matrix[index]) > battery_range_case_2[index]:
+                return False
+        return True
 
     def inicial_value(self):
+        random_arr = []
         can = 0
         while not can:
             random_arr = np.array(list(delivery_point_index_proof_case))
@@ -121,15 +127,11 @@ class GeneticAlgoritm:
             for drone in range(0, n_drones):
                 value = warehouse_index_proof_case[random_drone[drone]]
                 random_arr[drone].append(value)
-            if self.batteryIsValid(random_arr):
+            if self.bateryIsValid(random_arr):
                 can = 1
         return random_arr
 
-    def bateryIsValid(matrix) -> bool:
-        for index in range(len(matrix)):
-            if sum(matrix[index]) > battery_range_case_2[index]:
-                return False
-        return True
+
 
     def energyDroneIsValid(self, way, drone):
         init = initial_position_proof_case[drone]
@@ -203,36 +205,27 @@ class GeneticAlgoritm:
 
         return new_matrix
 
-    def crossover_Middles(self, matrix1, matrix2):
+    def crossover_Middles(self, matrix1, matrix2) -> []:
         new_matrix = []
         for drone in range(matrix1):
-            can = 0
-            while not can:
-                arr_combinations = [[[0, 0], [0, 0]], [[0, 0], [0, 0]]]
-                random_val1 = randint(0, 1)
-                random_val2 = randint(0, 1)
-                combination = randint(0, 1)
-                if arr_combinations[random_val1][random_val2][combination] != 1:
-                    arr_combinations[random_val1][random_val2][combination] = 1
-                    line = self.cross_over_line(matrix1[drone], matrix2[drone], random_val1, random_val2, combination)
-                else:
-                    find = 0
-                    i = 0
-                    while i < len(arr_combinations) and not find:
-                        j = 0
-                        while j < len(arr_combinations[0]) and not find:
-                            k = 0
-                            while k < len(arr_combinations[0][0]) and not find:
-                                if arr_combinations[i][j][k] != 1:
-                                    arr_combinations[i][j][k] = 1
-                                    line = self.cross_over_line(matrix1[drone], matrix2[drone], i, j, k)
-                                    if self.energyDroneIsValid(line, drone):
-                                        can = 1
-                                        find = 1
-                                        new_matrix.append(line)
-                    if find == 0:
-                        return []
-
+            posiblecomb = []
+            arr_combinations = [[[0, 0], [0, 0]], [[0, 0], [0, 0]]]
+            i = 0
+            while i < len(arr_combinations):
+                j = 0
+                while j < len(arr_combinations[0]):
+                    k = 0
+                    while k < len(arr_combinations[0][0]):
+                        if arr_combinations[i][j][k] != 1:
+                            arr_combinations[i][j][k] = 1
+                            line = self.cross_over_line(matrix1[drone], matrix2[drone], i, j, k)
+                            if self.energyDroneIsValid(line, drone) and self.drone_capacity_valid(line, drone):
+                                posiblecomb.append(line)
+            if len(posiblecomb) != 0:
+                selected = randint(0, len(posiblecomb) - 1)
+                new_matrix.append(selected)
+            else:
+                return []
         return new_matrix
 
     def cross_over_line(self, arr1, arr2, random_val1, random_val2, combination) -> []:
