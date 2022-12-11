@@ -78,21 +78,27 @@ class Chromosome:
 
     def calc_values(self) -> int:
         suma = 0
-        for drone_path in self.matrix:
-            for i in range(len(drone_path) - 1):
-                suma += distances_proof_case[i, i + 1]
+        for indexdrone in range(self.matrix):
+            suma += distances_proof_case[initial_position_proof_case[indexdrone], self.matrix[0]]
+            for indexval in range(len(self.matrix[index])):
+                suma += distances_proof_case[indexval, indexval + 1]
         return suma
 
 
 class GeneticAlgoritm:
-    def __init__(self, inicial_popularion, prob):
+    def __init__(self, inicial_popularion, prob, generations, combv, middle):
         self.inicial_population = inicial_popularion
+        self.prob = prob
+        self.generations = generations
         inicial_values = []
-        for i in range(10):
+        for i in range(inicial_popularion):
             inicial_values.append(Chromosome(self.inicial_value()))
         inicial_values.sort(key=lambda chrome: chrome.value)
-        self.prob = prob
-    def bateryIsValid(self,matrix) -> bool:
+        self.inicial_values = inicial_values
+        self.combv = combv
+        self.middle = middle
+
+    def bateryIsValid(self, matrix:list) -> bool:
         for index in range(len(matrix)):
             if sum(matrix[index]) > battery_range_case_2[index]:
                 return False
@@ -130,8 +136,6 @@ class GeneticAlgoritm:
             if self.bateryIsValid(random_arr):
                 can = 1
         return random_arr
-
-
 
     def energyDroneIsValid(self, way, drone):
         init = initial_position_proof_case[drone]
@@ -264,6 +268,7 @@ class GeneticAlgoritm:
         number will never be repeated.
         a and b have the same length
         '''
+
         def check_if_repeated(array, element):
             '''
             This function will check if an element is repeated in an array
@@ -279,18 +284,17 @@ class GeneticAlgoritm:
         # Now remove the last element from all the arrays
         a = [i[:-1] for i in a]
         b = [i[:-1] for i in b]
-        print ('End warehouses: ', last_a, last_b)
+        print('End warehouses: ', last_a, last_b)
         # Then we combine last_a and last_b  as a matrix where the rows are the
         # elements of last_a and the columns are the elements of last_b
         comb = np.array([last_a, last_b])
-        print ('Combination matrix: ', comb)
+        print('Combination matrix: ', comb)
         rows_visited = []
         nodes_visited = []
 
         # we will create a new matrix with empty arrays the same size as the number of rows
         # in the a and b arrays
         new_matrix = [np.array([]) for i in range(len(a))]
-
 
         # We will now iterate over the rows of a and b
         # We will start by selecting a random row 
@@ -303,7 +307,7 @@ class GeneticAlgoritm:
             # We add the row to the list of visited rows
             rows_visited.append(row)
             # We print the current row
-            print ('Drone {}' .format(row))
+            print('Drone {}'.format(row))
             # Now we merge the two arrays such as
             # merge = [a1, b1, a2, b2, ...]
             # note that a[row] and b[row] have different length
@@ -324,7 +328,7 @@ class GeneticAlgoritm:
                 # If choice is 0, we add an element from a[row]
                 if choice == 0:
                     if check_if_repeated(merge, a[row][i]):
-                        #Check if the element is in nodes_visited
+                        # Check if the element is in nodes_visited
                         if check_if_repeated(nodes_visited, a[row][i]):
                             continue
                         else:
@@ -378,7 +382,7 @@ class GeneticAlgoritm:
                 merge = merge[elements_to_remove:]
 
             # Now we print the merged array
-            print ('Merge: ', merge)
+            print('Merge: ', merge)
             # Now we add the last element of merge to the list of visited nodes
             for i in merge:
                 nodes_visited.append(i)
@@ -386,16 +390,16 @@ class GeneticAlgoritm:
             choice = np.random.randint(0, 2)
             merge.append(comb[choice, row])
             # Now we print the final merge
-            print ('Final merge: ', merge)
+            print('Final merge: ', merge)
 
             # Now we add the merge to the new new_matrix in order to return it
             new_matrix[row] = np.array(merge)
-            
+
         # print nodes_visited
-        print ('Nodes visited: ', nodes_visited)
+        print('Nodes visited: ', nodes_visited)
 
         # Now we check that all the nodes in a and b have been visited
-            
+
         # First we get the list of all the nodes in a and b
         all_nodes = []
         for i in a:
@@ -409,11 +413,11 @@ class GeneticAlgoritm:
         # Now we check if all the nodes have been visited
 
         if set(all_nodes) == set(nodes_visited):
-            print ('All nodes have been visited')
+            print('All nodes have been visited')
 
         # Now we make a list of the nodes that have not been visited
         nodes_not_visited = list(set(all_nodes) - set(nodes_visited))
-        print ('Nodes not visited: ', nodes_not_visited)
+        print('Nodes not visited: ', nodes_not_visited)
 
         # Now we add the nodes that have not been visited to the new matrix in a random order
         # First we shuffle the nodes_not_visited
@@ -428,7 +432,7 @@ class GeneticAlgoritm:
             if len(new_matrix[row]) == 1:
                 # If it is one we add the not visitted nodes at the start of the row
                 new_matrix[row] = np.insert(new_matrix[row], 0, nodes_not_visited[i])
-            
+
             else:
                 # then we add the node to the row at a random position in the row
                 # all the postions are valid except the last one
@@ -436,3 +440,91 @@ class GeneticAlgoritm:
                 new_matrix[row] = np.insert(new_matrix[row], pos, nodes_not_visited[i])
 
         return new_matrix
+
+    def matrix_capacity_valid(self, matrix):
+        for index in range(len(matrix)):
+            if not self.drone_capacity_valid(matrix[index], index):
+                return False
+        return True
+
+    def is_all_values(self, matrix):
+        listnodesdeli = list(delivery_point_index_proof_case)
+        for travel in matrix:
+            for value in range(len(travel) - 1):
+                if travel[value] in listnodesdeli:
+                    listnodesdeli.remove(travel[value])
+                else:
+                    return False
+        if len(listnodesdeli) != 0:
+            return False
+        else:
+            return True
+
+    def values_not_in_list(self, lista, values):
+        actual = []
+        for i in range(len(lista) - 1):
+            if lista[i] in values or lista[i] in actual:
+                return False
+            actual.append(lista[i])
+        return True
+
+    def crossover_Middles(self, matrix1, matrix2) -> []:
+        new_matrix = []
+        values = []
+        for drone in range(len(matrix1)):
+            posiblecomb = []
+            arr_combinations = [[[0, 0], [0, 0]], [[0, 0], [0, 0]]]
+            i = 0
+            while i < len(arr_combinations):
+                j = 0
+                while j < len(arr_combinations[0]):
+                    k = 0
+                    while k < len(arr_combinations[0][0]):
+                        if arr_combinations[i][j][k] != 1:
+                            arr_combinations[i][j][k] = 1
+                            line = self.cross_over_line(matrix1[drone], matrix2[drone], i, j, k)
+                            if self.energyDroneIsValid(line, drone) and self.drone_capacity_valid(line,
+                                                                                                  drone) and self.values_not_in_list(
+                                line, values):
+                                posiblecomb.append(line)
+                        k += 1
+                    j += 1
+                i += 1
+            if len(posiblecomb) != 0:
+                selected = randint(0, len(posiblecomb) - 1)
+                line = posiblecomb[selected]
+                new_matrix.append(line)
+                cut = len(line) - 1
+                cutted = line[:cut]
+                values = values + cutted
+            else:
+                return []
+        if self.is_all_values(new_matrix):
+            return new_matrix
+        else:
+            return []
+    def cruzamiento(self, arraycross):
+        combinationsarr = []
+        for matrixindex in range(arraycross):
+            for secondm in range(matrixindex, len(arraycross)):
+                if self.combv:
+                    matrixmerged = self.comb(arraycross[matrixindex], arraycross[secondm])
+                    if self.is_all_values(matrixmerged) and self.bateryIsValid(
+                            matrixmerged) and self.matrix_capacity_valid(
+                            matrixmerged):
+
+                        combinationsarr.append(Chromosome(matrixmerged))
+                if self.middle:
+                    matrixmerged = self.crossover_Middles(arraycross[matrixindex], arraycross[secondm])
+                    if len(matrixmerged):
+                        combinationsarr.append(Chromosome(matrixmerged))
+        combinationsarr = combinationsarr + arraycross
+        combinationsarr.sort(key=lambda chrome: chrome.value)
+        return combinationsarr
+
+    def run(self):
+        all = self.cruzamiento(self.inicial_values)
+        all = all[:self.inicial_population]
+        for index in range(self.generations):
+            all = self.cruzamiento(all)
+        print(all[0])

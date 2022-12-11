@@ -73,6 +73,183 @@ size_delivery = len(delivery_point_index_proof_case)
 initial_position_proof_case = {0: 0, 1: 5}
 
 
+def comb( a, b):
+    '''
+    This function will combine the two arrays such a
+    number will never be repeated.
+    a and b have the same length
+    '''
+
+    def check_if_repeated(array, element):
+        '''
+        This function will check if an element is repeated in an array
+        '''
+        if element in array:
+            return True
+        else:
+            return False
+
+    # First remove the last element of all the arrays and store them in a list
+    last_a = [i[-1] for i in a]
+    last_b = [i[-1] for i in b]
+    # Now remove the last element from all the arrays
+    a = [i[:-1] for i in a]
+    b = [i[:-1] for i in b]
+
+    # Then we combine last_a and last_b  as a matrix where the rows are the
+    # elements of last_a and the columns are the elements of last_b
+    comb = np.array([last_a, last_b])
+
+    rows_visited = []
+    nodes_visited = []
+
+    # we will create a new matrix with empty arrays the same size as the number of rows
+    # in the a and b arrays
+    new_matrix = [np.array([]) for i in range(len(a))]
+
+    # We will now iterate over the rows of a and b
+    # We will start by selecting a random row
+    while len(rows_visited) < len(a):
+        # We select a random row
+        row = np.random.randint(0, len(a))
+        # If the row has already been visited, we select another one
+        if row in rows_visited:
+            continue
+        # We add the row to the list of visited rows
+        rows_visited.append(row)
+        # We print the current row
+
+        # Now we merge the two arrays such as
+        # merge = [a1, b1, a2, b2, ...]
+        # note that a[row] and b[row] have different length
+        merge = []
+        # First get the length of the shortest array
+        min_len = min(len(a[row]), len(b[row]))
+
+        # Add length of the rows and get the mean of the two and floor it
+
+        # This will be the number of elements we will add to merge
+        # from a[row] and b[row]
+        mean = int(np.floor((len(a[row]) + len(b[row])) / 2))
+
+        # Now we iterate over the shortest array
+        for i in range(min_len):
+            # Make a choice between a[row] and b[row]
+            choice = np.random.randint(0, 2)
+            # If choice is 0, we add an element from a[row]
+            if choice == 0:
+                if check_if_repeated(merge, a[row][i]):
+                    # Check if the element is in nodes_visited
+                    if check_if_repeated(nodes_visited, a[row][i]):
+                        continue
+                    else:
+                        merge.append(b[row][i])
+                else:
+                    # Check if the element is in nodes_visited
+                    if check_if_repeated(nodes_visited, a[row][i]):
+                        continue
+                    else:
+                        merge.append(a[row][i])
+            # If choice is 1, we add an element from b[row]
+            else:
+                if check_if_repeated(merge, b[row][i]):
+                    # Check if the element is in nodes_visited
+                    if check_if_repeated(nodes_visited, b[row][i]):
+                        continue
+                    else:
+                        merge.append(a[row][i])
+                else:
+                    # Check if the element is in nodes_visited
+                    if check_if_repeated(nodes_visited, b[row][i]):
+                        continue
+                    else:
+                        merge.append(b[row][i])
+
+        # Now we add the remaining elements of the longest array
+        # to merge ensuring that the elements are not repeated
+        if len(a[row]) > len(b[row]):
+            for i in range(len(a[row]) - min_len):
+                if check_if_repeated(merge, a[row][i + min_len]):
+                    # Check if the element is in nodes_visited
+                    if check_if_repeated(nodes_visited, a[row][i + min_len]):
+                        continue
+                    else:
+                        merge.append(a[row][i + min_len])
+                else:
+                    # Check if the element is in nodes_visited
+                    if check_if_repeated(nodes_visited, a[row][i + min_len]):
+                        continue
+                    else:
+                        merge.append(a[row][i + min_len])
+
+        # Now we make a choice between cuting the last element of
+        # merge or the first element of merge in order to make sure
+        # that the size of merge is equal to mean
+        choice = np.random.randint(0, 2)
+        elements_to_remove = len(merge) - mean
+        if choice == 0:
+            merge = merge[:-elements_to_remove]
+        else:
+            merge = merge[elements_to_remove:]
+
+        # Now we add the last element of merge to the list of visited nodes
+        for i in merge:
+            nodes_visited.append(i)
+        # Now we add to the merge row a random choice between the last_a and last_b
+        choice = np.random.randint(0, 2)
+        merge.append(comb[choice, row])
+        # Now we print the final merge
+
+
+        # Now we add the merge to the new new_matrix in order to return it
+        new_matrix[row] = np.array(merge)
+
+    # print nodes_visited
+
+
+    # Now we check that all the nodes in a and b have been visited
+
+    # First we get the list of all the nodes in a and b
+    all_nodes = []
+    for i in a:
+        all_nodes.extend(i)
+    for i in b:
+        all_nodes.extend(i)
+
+    # Now we delete the repeated nodes
+    all_nodes = list(set(all_nodes))
+
+    # Now we check if all the nodes have been visited
+
+    if set(all_nodes) == set(nodes_visited):
+        asfsef=0
+
+    # Now we make a list of the nodes that have not been visited
+    nodes_not_visited = list(set(all_nodes) - set(nodes_visited))
+
+
+    # Now we add the nodes that have not been visited to the new matrix in a random order
+    # First we shuffle the nodes_not_visited
+    np.random.shuffle(nodes_not_visited)
+
+    # Now we add the nodes to the new new_matrix
+    for i in range(len(nodes_not_visited)):
+
+        # We select a random row
+        row = np.random.randint(0, len(a))
+        # First we check that size of the row is not one
+        if len(new_matrix[row]) == 1:
+            # If it is one we add the not visitted nodes at the start of the row
+            new_matrix[row] = np.insert(new_matrix[row], 0, nodes_not_visited[i])
+
+        else:
+            # then we add the node to the row at a random position in the row
+            # all the postions are valid except the last one
+            pos = np.random.randint(0, len(new_matrix[row]) - 1)
+            new_matrix[row] = np.insert(new_matrix[row], pos, nodes_not_visited[i])
+
+    return new_matrix
+
 def bateryIsValid(matrix) -> bool:
     for index in range(len(matrix)):
         if sum(matrix[index]) > battery_range_case_2[index]:
@@ -89,7 +266,11 @@ def energyDroneIsValid(way, drone):
         return True
     else:
         return False
-
+def matrix_capacity_valid(matrix):
+    for index in range(len(matrix)):
+        if not drone_capacity_valid(matrix[index], index):
+            return False
+    return True
 
 def drone_capacity_valid(way, drone) -> bool:
     """
@@ -169,7 +350,10 @@ def is_all_values(matrix):
     listnodesdeli = list(delivery_point_index_proof_case)
     for travel in matrix:
         for value in range(len(travel)-1):
-            listnodesdeli.remove(travel[value])
+            if travel[value] in listnodesdeli:
+                listnodesdeli.remove(travel[value])
+            else:
+                return False
     if len(listnodesdeli) != 0:
         return False
     else:
@@ -249,11 +433,17 @@ def inicial_value():
 
 i = 0
 j=0
-for i in range(10000000):
+m1=[[],[]]
+m2=[[],[]]
+m3=m1+m2
+print(m3)
+"""for i in range(10000000):
     i+=1
     matrix1 = inicial_value()
     matrix2 = inicial_value()
+    matrixmerged = comb(matrix1, matrix2)
     matrixmerged = crossover_Middles(matrix1, matrix2)
-    if len(matrixmerged) != 0:
+    if is_all_values(matrixmerged) and bateryIsValid(matrixmerged) and matrix_capacity_valid(matrixmerged):
         j+=1
-        print(j/i)
+        print(j/i,"NANIIIII????????")
+        print(matrixmerged )"""
