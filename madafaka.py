@@ -39,7 +39,7 @@ for i in proof_case.index:
 
 mean_distance_proof_case = np.round(np.mean(list(distances_proof_case.values())), 0)
 
-mean_battery_range = mean_distance_proof_case * 3
+mean_battery_range = mean_distance_proof_case * 2
 
 n_drones = 2
 
@@ -60,7 +60,7 @@ for index, row in proof_case.iterrows():
 mean_demand_proof_case = np.round(mean_demand_proof_case / len(proof_case[proof_case['node_type'] == 'delivery_point']),
                                   0)
 
-mean_capacity_dron = mean_demand_proof_case * 3
+mean_capacity_dron = mean_demand_proof_case * 2
 
 capacity_proof_case = [0.5 * mean_capacity_dron, 1.5 * mean_capacity_dron]
 
@@ -83,7 +83,9 @@ class Chromosome:
             for indexval in range(len(self.matrix[indexdrone])):
                 suma += distances_proof_case[indexval, indexval + 1]
         return suma
-
+    
+    def __str__(self):
+        return f'{self.matrix}'
 
 class GeneticAlgoritm:
     def __init__(self, inicial_popularion, prob, generations, combv, middle):
@@ -287,11 +289,9 @@ class GeneticAlgoritm:
         # Now remove the last element from all the arrays
         a = [i[:-1] for i in a]
         b = [i[:-1] for i in b]
-        print('End warehouses: ', last_a, last_b)
         # Then we combine last_a and last_b  as a matrix where the rows are the
         # elements of last_a and the columns are the elements of last_b
         comb = np.array([last_a, last_b])
-        print('Combination matrix: ', comb)
         rows_visited = []
         nodes_visited = []
 
@@ -310,7 +310,6 @@ class GeneticAlgoritm:
             # We add the row to the list of visited rows
             rows_visited.append(row)
             # We print the current row
-            print('Drone {}'.format(row))
             # Now we merge the two arrays such as
             # merge = [a1, b1, a2, b2, ...]
             # note that a[row] and b[row] have different length
@@ -385,7 +384,6 @@ class GeneticAlgoritm:
                 merge = merge[elements_to_remove:]
 
             # Now we print the merged array
-            print('Merge: ', merge)
             # Now we add the last element of merge to the list of visited nodes
             for i in merge:
                 nodes_visited.append(i)
@@ -393,13 +391,11 @@ class GeneticAlgoritm:
             choice = np.random.randint(0, 2)
             merge.append(comb[choice, row])
             # Now we print the final merge
-            print('Final merge: ', merge)
 
             # Now we add the merge to the new new_matrix in order to return it
             new_matrix[row] = np.array(merge)
 
         # print nodes_visited
-        print('Nodes visited: ', nodes_visited)
 
         # Now we check that all the nodes in a and b have been visited
 
@@ -415,12 +411,8 @@ class GeneticAlgoritm:
 
         # Now we check if all the nodes have been visited
 
-        if set(all_nodes) == set(nodes_visited):
-            print('All nodes have been visited')
-
         # Now we make a list of the nodes that have not been visited
         nodes_not_visited = list(set(all_nodes) - set(nodes_visited))
-        print('Nodes not visited: ', nodes_not_visited)
 
         # Now we add the nodes that have not been visited to the new matrix in a random order
         # First we shuffle the nodes_not_visited
@@ -521,7 +513,7 @@ class GeneticAlgoritm:
             for secondm in range(matrixindex, len(arraycross)):
                 if self.combv:
                     matrixmerged = self.comb(arraycross[matrixindex].matrix, arraycross[secondm].matrix)
-                    if self.is_all_values(matrixmerged) and self.bateryIsValid(
+                    if  self.bateryIsValid(
                             matrixmerged) and self.matrix_capacity_valid(
                         matrixmerged):
                         combinationsarr.append(Chromosome(matrixmerged))
@@ -542,5 +534,5 @@ class GeneticAlgoritm:
         print(all[0])
 
 
-GA = GeneticAlgoritm(20, 0.2, 100, 1, 1)
+GA = GeneticAlgoritm(20, 0.2, 100, 0, 1)
 GA.run()
