@@ -71,7 +71,7 @@ initial_position_proof_case = {0: 0, 1: 5}
 
 
 class Chromosome:
-    def __init__(self, matrix: []):
+    def __init__(self, matrix):
         self.matrix = matrix
         self.value = self.calc_values()
         self.valid = 0
@@ -170,51 +170,39 @@ class GeneticAlgoritm:
         Mutate the matrix
         The mutation is done by changing the position of two elements in the matrix the matrix 
         cant have the same element twice
+        shuffle some the nodes between rows
         '''
         new_matrix = []
 
-        is_valid = False
-        while not is_valid:
-            for drone in range(matrix):
-                random_val1 = randint(0, len(matrix[drone]) - 1)
-                random_val2 = randint(0, len(matrix[drone]) - 1)
-                while random_val1 == random_val2:
-                    random_val2 = randint(0, len(matrix[drone]) - 1)
-                matrix[drone][random_val1], matrix[drone][random_val2] = matrix[drone][random_val2], matrix[drone][
-                    random_val1]
-                battery = self.batteryIsValid(matrix)
-                energy = self.energyDroneIsValid(matrix)
-                if battery and energy:
-                    is_valid = True
-        return matrix
+        # First remove the last element of each row
+        # and store it in a list
 
-    def two_point_crossover(self, matrix1, matrix2):
-        '''
-        Use the two point crossover to make the new matrix
-        '''
-        is_valid = False
-        new_matrix = []
-        while not is_valid:
-            new_matrix = []
-            for drone in range(matrix1):
-                random_val1 = randint(0, len(matrix1[drone]) - 1)
-                random_val2 = randint(0, len(matrix1[drone]) - 1)
-                while random_val1 == random_val2:
-                    random_val2 = randint(0, len(matrix1[drone]) - 1)
-                    if random_val1 > random_val2:
-                        random_val1, random_val2 = random_val2, random_val1
-                    # make the 2 point crossover
-                    new_matrix.append(
-                        matrix1[drone][:random_val1] + matrix2[drone][random_val1:random_val2] + matrix1[drone][
-                                                                                                 random_val2:])
-            battery = self.batteryIsValid(new_matrix)
-            energy = self.energyDroneIsValid(new_matrix)
-            if battery and energy:
-                is_valid = True
+        last_elements = [row[-1] for row in matrix]
+        matrix = [row[:-1] for row in matrix]
+
+        for i in range(len(matrix)):
+            new_matrix.append(matrix[i])
+
+        # Now we select two random rows
+
+        row1 = np.random.randint(0, len(matrix))
+        row2 = np.random.randint(0, len(matrix))
+
+        # Now we select two random positions in the rows
+        pos1 = np.random.randint(0, len(matrix[row1]))
+        pos2 = np.random.randint(0, len(matrix[row2]))
+
+        # Now we swap the elements in the rows
+        new_matrix[row1][pos1], new_matrix[row2][pos2] = new_matrix[row2][pos2], new_matrix[row1][pos1]
+
+        # Now we add the last elements to the rows
+        new_matrix[row1].append(last_elements[row1])
+
+        # Now we return the new_matrix
 
         return new_matrix
 
-    def crossover_Middles(self, matrix1, matrix2) -> []:
+    def crossover_Middles(self, matrix1, matrix2):
         new_matrix = []
         for drone in range(matrix1):
             posiblecomb = []
@@ -237,7 +225,7 @@ class GeneticAlgoritm:
                 return []
         return new_matrix
 
-    def cross_over_line(self,arr1, arr2, random_val1, random_val2, combination) -> []:
+    def cross_over_line(self,arr1, arr2, random_val1, random_val2, combination):
         size_m1 = len(arr1)
         size_m2 = len(arr2)
         if size_m1 % 2 != 0:
@@ -471,7 +459,7 @@ class GeneticAlgoritm:
             actual.append(lista[i])
         return True
 
-    def crossover_Middles(self, matrix1, matrix2) -> []:
+    def crossover_Middles(self, matrix1, matrix2):
         new_matrix = []
         values = []
         for drone in range(len(matrix1)):
@@ -534,5 +522,5 @@ class GeneticAlgoritm:
         print(all[0])
 
 
-GA = GeneticAlgoritm(20, 0.2, 100, 0, 1)
+GA = GeneticAlgoritm(20, 0.2, 100, 1, 1)
 GA.run()
