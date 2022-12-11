@@ -431,10 +431,15 @@ class GeneticAlgoritm:
 
             # We select a random row
             row = np.random.randint(0, len(a))
-
-            # then we add the node to the row at a random position in the row
-            # all the postions are valid except the last one
-            pos = np.random.randint(0, len(new_matrix[row]) - 1)
-            new_matrix[row] = np.insert(new_matrix[row], pos, nodes_not_visited[i])
+            # First we check that size of the row is not one
+            if len(new_matrix[row]) == 1:
+                # If it is one we add the not visitted nodes at the start of the row
+                new_matrix[row] = np.insert(new_matrix[row], 0, nodes_not_visited[i])
+            
+            else:
+                # then we add the node to the row at a random position in the row
+                # all the postions are valid except the last one
+                pos = np.random.randint(0, len(new_matrix[row]) - 1)
+                new_matrix[row] = np.insert(new_matrix[row], pos, nodes_not_visited[i])
 
         return new_matrix
