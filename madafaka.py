@@ -80,12 +80,13 @@ class Chromosome:
         suma = 0
         for indexdrone in range(len(self.matrix)):
             suma += distances_proof_case[initial_position_proof_case[indexdrone], self.matrix[indexdrone][0]]
-            for indexval in range(len(self.matrix[indexdrone])):
-                suma += distances_proof_case[indexval, indexval + 1]
+            for indexval in range(len(self.matrix[indexdrone])-1):
+                next_val = indexval+1
+                suma += distances_proof_case[self.matrix[indexdrone][indexval], self.matrix[indexdrone][next_val]]
         return suma
     
     def __str__(self):
-        return f'{self.matrix}'
+        return f'{self.matrix}{self.value}'
 
 class GeneticAlgoritm:
     def __init__(self, inicial_popularion, prob, generations, combv, middle):
@@ -520,7 +521,8 @@ class GeneticAlgoritm:
             all = self.cruzamiento(all)
             all = all[:self.inicial_population]
         print(all[0])
+        print(all[1])
 
 
-GA = GeneticAlgoritm(20, 0.2, 100, 1, 1)
+GA = GeneticAlgoritm(20, 0.2, 150, 1, 1)
 GA.run()
