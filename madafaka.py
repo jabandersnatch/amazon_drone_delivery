@@ -439,6 +439,10 @@ class GeneticAlgoritm:
                 pos = np.random.randint(0, len(new_matrix[row]) - 1)
                 new_matrix[row] = np.insert(new_matrix[row], pos, nodes_not_visited[i])
 
+        # turn the new_matrix into a list of lists
+        new_matrix = new_matrix.tolist()
+
+        # Now we return the new_matrix
         return new_matrix
 
     def matrix_capacity_valid(self, matrix):
