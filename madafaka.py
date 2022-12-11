@@ -141,7 +141,7 @@ class GeneticAlgoritm:
         else:
             return False
 
-    def drone_charge_valid(self, way, drone) -> bool:
+    def drone_capacity_valid(self, way, drone) -> bool:
         """
         function that verifies if the path of a drone meets the conditions
         :param way:  list of the path that the drone follows
