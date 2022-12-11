@@ -89,7 +89,7 @@ class GeneticAlgoritm:
         self.inicial_population = inicial_popularion
         inicial_values = []
         for i in range(10):
-            inicial_values.append(Chromosome(inicial_value()))
+            inicial_values.append(Chromosome(self.inicial_value()))
         inicial_values.sort(key=lambda chrome: chrome.value)
         self.prob = prob
 
@@ -99,7 +99,7 @@ class GeneticAlgoritm:
             random_arr = np.array(list(delivery_point_index_proof_case))
             np.random.shuffle(random_arr)
             if size_delivery - n_drones % 2 == 0:
-                random_arr = np.reshape(random_arr, (n_drones, size_delivery-n_drones))
+                random_arr = np.reshape(random_arr, (n_drones, size_delivery - n_drones))
                 random_arr = random_arr.tolist()
             else:
                 final_ind = size_delivery - 1
@@ -111,13 +111,13 @@ class GeneticAlgoritm:
                 random_arr = random_arr.tolist()
                 random_arr[random_index].append(value)
             for drone_index in range(0, n_drones):
-                while len(random_arr[drone_index])>capacity_proof_case[drone_index]:
+                while len(random_arr[drone_index]) > capacity_proof_case[drone_index]:
                     if drone_index != n_drones - 1:
                         value = random_arr[drone_index].pop()
                         random_arr[drone_index + 1].append(value)
                     else:
                         print("the problen can not be resolved")
-            random_drone=[random.randint(0,len(warehouse_index_proof_case)-1)for _ in range(n_drones)]
+            random_drone = [random.randint(0, len(warehouse_index_proof_case) - 1) for _ in range(n_drones)]
             for drone in range(0, n_drones):
                 value = warehouse_index_proof_case[random_drone[drone]]
                 random_arr[drone].append(value)
@@ -125,17 +125,31 @@ class GeneticAlgoritm:
                 can = 1
         return random_arr
 
-    def bateryIsValid(matrix)->bool:
+    def bateryIsValid(matrix) -> bool:
         for index in range(len(matrix)):
             if sum(matrix[index]) > battery_range_case_2[index]:
                 return False
         return True
-    def energyDroneIsValid(self, lista, drone):
+
+    def energyDroneIsValid(self, way, drone):
         init = initial_position_proof_case[drone]
-        sum = distances_proof_case[init, lista[0]]
-        for index in range(len(lista) - 1):
-            sum += distances_proof_case[lista[index], lista[index + 1]]
+        sum = distances_proof_case[init, way[0]]
+        for index in range(len(way) - 1):
+            sum += distances_proof_case[way[index], way[index + 1]]
         if sum <= battery_range_case_2[drone]:
+            return True
+        else:
+            return False
+
+    def drone_charge_valid(self, way, drone) -> bool:
+        """
+        function that verifies if the path of a drone meets the conditions
+        :param way:  list of the path that the drone follows
+        :param drone: the index of drone that is making the path
+        :return isValid: returns true or false of the path follows the rules
+        """
+        size = len(way) - 1  # because the last node is a warehouse, and it doesn't count
+        if size <= capacity_proof_case[drone]:
             return True
         else:
             return False
@@ -206,7 +220,7 @@ class GeneticAlgoritm:
                     i = 0
                     while i < len(arr_combinations) and not find:
                         j = 0
-                        while j < len(arr_combinations[0])and not find:
+                        while j < len(arr_combinations[0]) and not find:
                             k = 0
                             while k < len(arr_combinations[0][0]) and not find:
                                 if arr_combinations[i][j][k] != 1:
@@ -221,7 +235,7 @@ class GeneticAlgoritm:
 
         return new_matrix
 
-    def cross_over_line(self, arr1, arr2, random_val1, random_val2, combination)->[]:
+    def cross_over_line(self, arr1, arr2, random_val1, random_val2, combination) -> []:
         size_m1 = len(arr1)
         size_m2 = len(arr2)
         if size_m1 % 2 != 0:
@@ -250,4 +264,3 @@ class GeneticAlgoritm:
             newArr = middlearr1 + middlearr2
 
         return newArr
-
