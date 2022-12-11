@@ -78,9 +78,9 @@ class Chromosome:
 
     def calc_values(self) -> int:
         suma = 0
-        for indexdrone in range(self.matrix):
-            suma += distances_proof_case[initial_position_proof_case[indexdrone], self.matrix[0]]
-            for indexval in range(len(self.matrix[index])):
+        for indexdrone in range(len(self.matrix)):
+            suma += distances_proof_case[initial_position_proof_case[indexdrone], self.matrix[indexdrone][0]]
+            for indexval in range(len(self.matrix[indexdrone])):
                 suma += distances_proof_case[indexval, indexval + 1]
         return suma
 
@@ -98,7 +98,7 @@ class GeneticAlgoritm:
         self.combv = combv
         self.middle = middle
 
-    def bateryIsValid(self, matrix:list) -> bool:
+    def bateryIsValid(self, matrix: list) -> bool:
         for index in range(len(matrix)):
             if sum(matrix[index]) > battery_range_case_2[index]:
                 return False
@@ -139,7 +139,10 @@ class GeneticAlgoritm:
 
     def energyDroneIsValid(self, way, drone):
         init = initial_position_proof_case[drone]
-        sum = distances_proof_case[init, way[0]]
+        if len(way)>0:
+            sum = distances_proof_case[init, way[0]]
+        else:
+            return False
         for index in range(len(way) - 1):
             sum += distances_proof_case[way[index], way[index + 1]]
         if sum <= battery_range_case_2[drone]:
@@ -232,7 +235,7 @@ class GeneticAlgoritm:
                 return []
         return new_matrix
 
-    def cross_over_line(self, arr1, arr2, random_val1, random_val2, combination) -> []:
+    def cross_over_line(self,arr1, arr2, random_val1, random_val2, combination) -> []:
         size_m1 = len(arr1)
         size_m2 = len(arr2)
         if size_m1 % 2 != 0:
@@ -241,16 +244,16 @@ class GeneticAlgoritm:
             else:
                 size_m1_middle = floor(size_m1 / 2)
         else:
-            size_m1_middle = int(size_m1 / 2)
-
+            size_m1_middle = size_m1 / 2
+        size_m1_middle = int(size_m1_middle)
         if size_m2 % 2 != 0:
             if random_val2 == 0:
                 size_m2_middle = ceil(size_m2 / 2)
             else:
                 size_m2_middle = floor(size_m2 / 2)
         else:
-            size_m2_middle = int(size_m2 / 2)
-
+            size_m2_middle = size_m2 / 2
+        size_m2_middle = int(size_m2_middle)
         if combination == 0:
             middlearr1 = arr1[size_m1_middle:]
             middlearr2 = arr2[:size_m2_middle]
@@ -440,7 +443,11 @@ class GeneticAlgoritm:
                 new_matrix[row] = np.insert(new_matrix[row], pos, nodes_not_visited[i])
 
         # turn the new_matrix into a list of lists
-        new_matrix = new_matrix.tolist()
+        new_matrixp = []
+        for value in new_matrix:
+            newline = value.tolist()
+            new_matrixp.append(newline)
+        new_matrix = new_matrixp
 
         # Now we return the new_matrix
         return new_matrix
@@ -507,19 +514,19 @@ class GeneticAlgoritm:
             return new_matrix
         else:
             return []
+
     def cruzamiento(self, arraycross):
         combinationsarr = []
-        for matrixindex in range(arraycross):
+        for matrixindex in range(len(arraycross)):
             for secondm in range(matrixindex, len(arraycross)):
                 if self.combv:
-                    matrixmerged = self.comb(arraycross[matrixindex], arraycross[secondm])
+                    matrixmerged = self.comb(arraycross[matrixindex].matrix, arraycross[secondm].matrix)
                     if self.is_all_values(matrixmerged) and self.bateryIsValid(
                             matrixmerged) and self.matrix_capacity_valid(
-                            matrixmerged):
-
+                        matrixmerged):
                         combinationsarr.append(Chromosome(matrixmerged))
                 if self.middle:
-                    matrixmerged = self.crossover_Middles(arraycross[matrixindex], arraycross[secondm])
+                    matrixmerged = self.crossover_Middles(arraycross[matrixindex].matrix, arraycross[secondm].matrix)
                     if len(matrixmerged):
                         combinationsarr.append(Chromosome(matrixmerged))
         combinationsarr = combinationsarr + arraycross
@@ -531,4 +538,9 @@ class GeneticAlgoritm:
         all = all[:self.inicial_population]
         for index in range(self.generations):
             all = self.cruzamiento(all)
+            all = all[:self.inicial_population]
         print(all[0])
+
+
+GA = GeneticAlgoritm(20, 0.2, 100, 1, 1)
+GA.run()
