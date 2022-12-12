@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 array_a = [np.array([1, 0]), np.array([2, 3, 4, 5])]
 
@@ -188,10 +189,52 @@ def comb(a, b):
         # Now we return the new_matrix
         return new_matrix
 
+def mutation(matrix):
+    '''
+    Mutate the matrix
+    The mutation is done by changing the position of two elements in the matrix the matrix 
+    cant have the same element twice
+    shuffle some the nodes between rows
+    '''
+    new_matrix = []
+
+    # First remove the last element of each row
+    # and store it in a list
+
+    last_elements = [row[-1] for row in matrix]
+    matrix = [row[:-1] for row in matrix]
+
+    for i in range(len(matrix)):
+        new_matrix.append(matrix[i])
+
+    # Now we select two random rows
+
+    row1 = np.random.randint(0, len(matrix))
+    row2 = np.random.randint(0, len(matrix))
+
+    # Now we select two random positions in the rows
+    pos1 = np.random.randint(0, len(matrix[row1]))
+    pos2 = np.random.randint(0, len(matrix[row2]))
+
+    # Now we swap the elements in the rows
+    new_matrix[row1][pos1], new_matrix[row2][pos2] = new_matrix[row2][pos2], new_matrix[row1][pos1]
+
+    # Now we add the last elements to the rows
+    new_matrix[row1].append(last_elements[row1])
+
+    # Now we return the new_matrix
+
+    return new_matrix
+
+
+
         
 print ('Array a: ', array_a)
 print ('Array b: ', array_b)
 new_matrix=comb(array_a, array_b)
 
 print ('New matrix: ', new_matrix)
+
+# Now we test the mutation function
+print ('Mutation: ', mutation(new_matrix))
 
