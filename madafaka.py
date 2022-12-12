@@ -39,7 +39,7 @@ for i in proof_case.index:
 
 mean_distance_proof_case = np.round(np.mean(list(distances_proof_case.values())), 0)
 
-mean_battery_range = mean_distance_proof_case * 2
+mean_battery_range = mean_distance_proof_case * 3
 
 n_drones = 2
 
@@ -60,7 +60,7 @@ for index, row in proof_case.iterrows():
 mean_demand_proof_case = np.round(mean_demand_proof_case / len(proof_case[proof_case['node_type'] == 'delivery_point']),
                                   0)
 
-mean_capacity_dron = mean_demand_proof_case * 2
+mean_capacity_dron = mean_demand_proof_case * 3
 
 capacity_proof_case = [0.5 * mean_capacity_dron, 1.5 * mean_capacity_dron]
 
@@ -213,29 +213,6 @@ class GeneticAlgoritm:
             if battery and energy:
                 is_valid = True
 
-        return new_matrix
-
-    def crossover_Middles(self, matrix1, matrix2) -> []:
-        new_matrix = []
-        for drone in range(matrix1):
-            posiblecomb = []
-            arr_combinations = [[[0, 0], [0, 0]], [[0, 0], [0, 0]]]
-            i = 0
-            while i < len(arr_combinations):
-                j = 0
-                while j < len(arr_combinations[0]):
-                    k = 0
-                    while k < len(arr_combinations[0][0]):
-                        if arr_combinations[i][j][k] != 1:
-                            arr_combinations[i][j][k] = 1
-                            line = self.cross_over_line(matrix1[drone], matrix2[drone], i, j, k)
-                            if self.energyDroneIsValid(line, drone) and self.drone_capacity_valid(line, drone):
-                                posiblecomb.append(line)
-            if len(posiblecomb) != 0:
-                selected = randint(0, len(posiblecomb) - 1)
-                new_matrix.append(selected)
-            else:
-                return []
         return new_matrix
 
     def cross_over_line(self,arr1, arr2, random_val1, random_val2, combination) -> []:
