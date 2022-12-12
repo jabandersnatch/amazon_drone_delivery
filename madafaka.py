@@ -204,29 +204,6 @@ class GeneticAlgoritm:
 
         return new_matrix
 
-    def crossover_Middles(self, matrix1, matrix2):
-        new_matrix = []
-        for drone in range(matrix1):
-            posiblecomb = []
-            arr_combinations = [[[0, 0], [0, 0]], [[0, 0], [0, 0]]]
-            i = 0
-            while i < len(arr_combinations):
-                j = 0
-                while j < len(arr_combinations[0]):
-                    k = 0
-                    while k < len(arr_combinations[0][0]):
-                        if arr_combinations[i][j][k] != 1:
-                            arr_combinations[i][j][k] = 1
-                            line = self.cross_over_line(matrix1[drone], matrix2[drone], i, j, k)
-                            if self.energyDroneIsValid(line, drone) and self.drone_capacity_valid(line, drone):
-                                posiblecomb.append(line)
-            if len(posiblecomb) != 0:
-                selected = randint(0, len(posiblecomb) - 1)
-                new_matrix.append(selected)
-            else:
-                return []
-        return new_matrix
-
     def cross_over_line(self,arr1, arr2, random_val1, random_val2, combination):
         size_m1 = len(arr1)
         size_m2 = len(arr2)
