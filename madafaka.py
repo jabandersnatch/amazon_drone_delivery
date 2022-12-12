@@ -89,9 +89,11 @@ class Chromosome:
         return f'{self.matrix}{self.value}'
 
 class GeneticAlgoritm:
-    def __init__(self, inicial_popularion, prob, generations, combv, middle):
+    def __init__(self, inicial_popularion, probc , probm , probmu, generations, combv, middle):
+        self.probmu = probmu
+        self.probm = probm
         self.inicial_population = inicial_popularion
-        self.prob = prob
+        self.prob = probc
         self.generations = generations
         inicial_values = []
         for i in range(inicial_popularion):
@@ -126,7 +128,7 @@ class GeneticAlgoritm:
                 random_arr = random_arr.tolist()
                 random_arr[random_index].append(value)
             for drone_index in range(0, n_drones):
-                while len(random_arr[drone_index]) > capacity_proof_case[drone_index]:
+                while len(random_arr[drone_index])-1 > capacity_proof_case[drone_index]:
                     if drone_index != n_drones - 1:
                         value = random_arr[drone_index].pop()
                         random_arr[drone_index + 1].append(value)
@@ -477,7 +479,7 @@ class GeneticAlgoritm:
         combinationsarr = []
         for matrixindex in range(len(arraycross)):
             for secondm in range(matrixindex, len(arraycross)):
-                if self.combv:
+                if self.combv and random.uniform(0, self.probc):
                     matrixmerged = self.comb(arraycross[matrixindex].matrix, arraycross[secondm].matrix)
                     if  self.bateryIsValid(
                             matrixmerged) and self.matrix_capacity_valid(
