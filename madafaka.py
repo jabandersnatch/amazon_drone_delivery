@@ -1,6 +1,7 @@
 import pandas as pd
 
 import numpy as np
+import matplotlib.pyplot as plt
 from numpy import ceil, floor
 from haversine import haversine, Unit
 from random import randint
@@ -39,7 +40,7 @@ for i in proof_case.index:
 
 mean_distance_proof_case = np.round(np.mean(list(distances_proof_case.values())), 0)
 
-mean_battery_range = mean_distance_proof_case * 2
+mean_battery_range = mean_distance_proof_case * 3
 
 n_drones = 2
 
@@ -60,7 +61,7 @@ for index, row in proof_case.iterrows():
 mean_demand_proof_case = np.round(mean_demand_proof_case / len(proof_case[proof_case['node_type'] == 'delivery_point']),
                                   0)
 
-mean_capacity_dron = mean_demand_proof_case * 2
+mean_capacity_dron = mean_demand_proof_case * 3
 
 capacity_proof_case = [0.5 * mean_capacity_dron, 1.5 * mean_capacity_dron]
 
@@ -524,5 +525,60 @@ class GeneticAlgoritm:
         print(all[1])
 
 
+
 GA = GeneticAlgoritm(20, 0.2, 150, 1, 1)
 GA.run()
+
+def plot_route(route):
+    '''
+    Plot the arraylist of arrays
+    route = [
+    [n1,n2,n3],
+    [n4,n5]
+    ]
+    plot the lines between n1 n2 n3 in a specific color
+
+    then plot the lines between n4 n5 in another color
+    '''
+    # create a new figure
+    fig = plt.figure()
+    # create a subplot
+    # plot the nodes
+    for i in range(len(route)):
+        # get the x and y values
+        for j in range(len(route[i])-1):
+            # get the longitude and latitude of the node from the data dictionary
+
+            # get the longitude key from Data
+
+            y1 = data['longitude'][route[i][j]]
+            y2 = data['longitude'][route[i][j+1]]
+            x1 = data['latitude'][route[i][j]]
+            x2 = data['latitude'][route[i][j+1]]
+
+            # plot the nodes and then the lines between them
+            plt.plot([x1,x2],[y1,y2],color='C'+str(i),linewidth=2)
+
+            # plot the nodes
+            plt.scatter(x1,y1,s=100)
+            plt.scatter(x2,y2,s=100)
+
+            # add the node number to the plot
+            plt.annotate(route[i][j],(x1,y1),fontsize=12)
+            plt.annotate(route[i][j+1],(x2,y2),fontsize=12)
+
+
+    # Set y and x axis labels
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    # set the title
+
+    plt.title('Route')
+
+
+    # show the plot
+    plt.show()
+
+routes = [[0, 1, 3, 6, 5], [5, 4, 2, 5]]
+plot_route(routes)
