@@ -178,6 +178,8 @@ class GeneticAlgoritm:
         cant have the same element twice
         shuffle some the nodes between rows
         '''
+
+        print(matrix)
         new_matrix = []
 
         # First remove the last element of each row
@@ -189,10 +191,23 @@ class GeneticAlgoritm:
         for i in range(len(matrix)):
             new_matrix.append(matrix[i])
 
+
+
         # Now we select two random rows
+
+        # if the matrix is empty we return the original matrix
 
         row1 = np.random.randint(0, len(matrix))
         row2 = np.random.randint(0, len(matrix))
+
+        # Now we check if the row aren't empty
+        # if they are we select another row
+
+        while len(matrix[row1]) == 0:
+            row1 = np.random.randint(0, len(matrix))
+
+        while len(matrix[row2]) == 0:
+            row2 = np.random.randint(0, len(matrix))
 
         # Now we select two random positions in the rows
         pos1 = np.random.randint(0, len(matrix[row1]))
