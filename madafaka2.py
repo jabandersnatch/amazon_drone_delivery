@@ -509,6 +509,7 @@ class GeneticAlgoritm:
                     if len(matrixmerged):
                         combinationsarr.append(Chromosome(matrixmerged))
                     if random.uniform(0, 1) < self.probmu:
+                        print('Aca se murio',len(matrixmerged), matrixmerged)
                         matrixmerged = self.mutation(matrixmerged)
                         if len(matrixmerged)>0 and self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(
                                 matrixmerged) and self.is_all_values(matrixmerged):
