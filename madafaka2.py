@@ -77,12 +77,10 @@ delivery_point_index_proof_case = proof_case[proof_case['node_type'] == 'deliver
 size_delivery = len(delivery_point_index_proof_case)
 
 initial_position_proof_case = {}
+
 # Create the initial position dictionary for the drones
 for i in range(n_drones):
     initial_position_proof_case[i] = random.choice(warehouse_index_proof_case)
-
-
-
 
 class Chromosome:
     def __init__(self, matrix):
@@ -506,13 +504,13 @@ class GeneticAlgoritm:
                 if self.middle and self.middle and random.uniform(0, 1) < self.probm:
                     matrixmerged = self.crossover_Middles(arraycross[matrixindex].matrix,
                                                           arraycross[secondm].matrix)
-                    if len(matrixmerged):
+                    if len(matrixmerged)>0:
                         combinationsarr.append(Chromosome(matrixmerged))
-                    if random.uniform(0, 1) < self.probmu:
-                        matrixmerged = self.mutation(matrixmerged)
-                        if len(matrixmerged)>0 and self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(
-                                matrixmerged) and self.is_all_values(matrixmerged):
-                            combinationsarr.append(Chromosome(matrixmerged))
+                        if random.uniform(0, 1) < self.probmu:
+                            matrixmerged = self.mutation(matrixmerged)
+                            if self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(
+                                    matrixmerged) and self.is_all_values(matrixmerged):
+                                combinationsarr.append(Chromosome(matrixmerged))
         combinationsarr = combinationsarr + arraycross
         combinationsarr.sort(key=lambda chrome: chrome.value)
         return combinationsarr
