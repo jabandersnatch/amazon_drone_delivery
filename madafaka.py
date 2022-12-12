@@ -81,16 +81,18 @@ class Chromosome:
         suma = 0
         for indexdrone in range(len(self.matrix)):
             suma += distances_proof_case[initial_position_proof_case[indexdrone], self.matrix[indexdrone][0]]
-            for indexval in range(len(self.matrix[indexdrone])-1):
-                next_val = indexval+1
+            for indexval in range(len(self.matrix[indexdrone]) - 1):
+                next_val = indexval + 1
                 suma += distances_proof_case[self.matrix[indexdrone][indexval], self.matrix[indexdrone][next_val]]
         return suma
-    
+
     def __str__(self):
         return f'{self.matrix}{self.value}'
 
+
 class GeneticAlgoritm:
-    def __init__(self, inicial_popularion, probc , probm , probmu, generations, combv, middle):
+    def __init__(self, inicial_popularion, probc, probm, probmu, generations, combv, middle):
+        self.probc = probc
         self.probmu = probmu
         self.probm = probm
         self.inicial_population = inicial_popularion
@@ -129,7 +131,7 @@ class GeneticAlgoritm:
                 random_arr = random_arr.tolist()
                 random_arr[random_index].append(value)
             for drone_index in range(0, n_drones):
-                while len(random_arr[drone_index])-1 > capacity_proof_case[drone_index]:
+                while len(random_arr[drone_index]) - 1 > capacity_proof_case[drone_index]:
                     if drone_index != n_drones - 1:
                         value = random_arr[drone_index].pop()
                         random_arr[drone_index + 1].append(value)
@@ -145,7 +147,7 @@ class GeneticAlgoritm:
 
     def energyDroneIsValid(self, way, drone):
         init = initial_position_proof_case[drone]
-        if len(way)>0:
+        if len(way) > 0:
             sum = distances_proof_case[init, way[0]]
         else:
             return False
@@ -206,7 +208,7 @@ class GeneticAlgoritm:
 
         return new_matrix
 
-    def cross_over_line(self,arr1, arr2, random_val1, random_val2, combination):
+    def cross_over_line(self, arr1, arr2, random_val1, random_val2, combination):
         size_m1 = len(arr1)
         size_m2 = len(arr2)
         if size_m1 % 2 != 0:
@@ -477,19 +479,36 @@ class GeneticAlgoritm:
             return []
 
     def cruzamiento(self, arraycross):
+        def copy_matrix(matrix):
+            newm = []
+            for value in matrix:
+                newl = value.copy()
+                newm.append(newl)
+            return newm
+
         combinationsarr = []
         for matrixindex in range(len(arraycross)):
             for secondm in range(matrixindex, len(arraycross)):
-                if self.combv and random.uniform(0, self.probc):
+                if self.combv and random.uniform(0, 1) < self.probc:
                     matrixmerged = self.comb(arraycross[matrixindex].matrix, arraycross[secondm].matrix)
-                    if  self.bateryIsValid(
-                            matrixmerged) and self.matrix_capacity_valid(
-                        matrixmerged):
+                    if self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(matrixmerged):
                         combinationsarr.append(Chromosome(matrixmerged))
-                if self.middle:
-                    matrixmerged = self.crossover_Middles(arraycross[matrixindex].matrix, arraycross[secondm].matrix)
-                    if len(matrixmerged):
-                        combinationsarr.append(Chromosome(matrixmerged))
+                        if random.uniform(0, 1) < self.probmu:
+                            matrixmerged = self.mutation(matrixmerged)
+                            if self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(
+                                    matrixmerged) and self.is_all_values(matrixmerged):
+                                combinationsarr.append(Chromosome(matrixmerged))
+                if self.combv and random.uniform(0, 1) < self.probm:
+                    if self.middle:
+                        matrixmerged = self.crossover_Middles(arraycross[matrixindex].matrix,
+                                                              arraycross[secondm].matrix)
+                        if len(matrixmerged):
+                            combinationsarr.append(Chromosome(matrixmerged))
+                    if random.uniform(0, 1) < self.probmu:
+                        matrixmerged = self.mutation(matrixmerged)
+                        if self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(
+                                matrixmerged) and self.is_all_values(matrixmerged):
+                            combinationsarr.append(Chromosome(matrixmerged))
         combinationsarr = combinationsarr + arraycross
         combinationsarr.sort(key=lambda chrome: chrome.value)
         return combinationsarr
@@ -504,9 +523,9 @@ class GeneticAlgoritm:
         print(all[1])
 
 
-
-GA = GeneticAlgoritm(20, 0.2, 150, 1, 1)
+GA = GeneticAlgoritm(20, 0.95, 0.95, 0.05, 150, 1, 1)
 GA.run()
+
 
 def plot_route(route):
     '''
@@ -525,27 +544,26 @@ def plot_route(route):
     # plot the nodes
     for i in range(len(route)):
         # get the x and y values
-        for j in range(len(route[i])-1):
+        for j in range(len(route[i]) - 1):
             # get the longitude and latitude of the node from the data dictionary
 
             # get the longitude key from Data
 
             y1 = data['longitude'][route[i][j]]
-            y2 = data['longitude'][route[i][j+1]]
+            y2 = data['longitude'][route[i][j + 1]]
             x1 = data['latitude'][route[i][j]]
-            x2 = data['latitude'][route[i][j+1]]
+            x2 = data['latitude'][route[i][j + 1]]
 
             # plot the nodes and then the lines between them
-            plt.plot([x1,x2],[y1,y2],color='C'+str(i),linewidth=2)
+            plt.plot([x1, x2], [y1, y2], color='C' + str(i), linewidth=2)
 
             # plot the nodes
-            plt.scatter(x1,y1,s=100)
-            plt.scatter(x2,y2,s=100)
+            plt.scatter(x1, y1, s=100)
+            plt.scatter(x2, y2, s=100)
 
             # add the node number to the plot
-            plt.annotate(route[i][j],(x1,y1),fontsize=12)
-            plt.annotate(route[i][j+1],(x2,y2),fontsize=12)
-
+            plt.annotate(route[i][j], (x1, y1), fontsize=12)
+            plt.annotate(route[i][j + 1], (x2, y2), fontsize=12)
 
     # Set y and x axis labels
     plt.xlabel('Longitude')
@@ -555,9 +573,9 @@ def plot_route(route):
 
     plt.title('Route')
 
-
     # show the plot
     plt.show()
+
 
 routes = [[0, 1, 3, 6, 5], [5, 4, 2, 5]]
 plot_route(routes)
