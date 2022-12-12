@@ -103,9 +103,12 @@ class Chromosome:
         return f'{self.matrix}{self.value}'
 
 class GeneticAlgoritm:
-    def __init__(self, inicial_popularion, prob, generations, combv, middle):
+    def __init__(self, inicial_popularion, probc, probm, probmu, generations, combv, middle):
+        self.probc = probc
+        self.probmu = probmu
+        self.probm = probm
         self.inicial_population = inicial_popularion
-        self.prob = prob
+        self.prob = probc
         self.generations = generations
         inicial_values = []
         for i in range(inicial_popularion):
@@ -486,17 +489,29 @@ class GeneticAlgoritm:
             return []
 
     def cruzamiento(self, arraycross):
+
         combinationsarr = []
         for matrixindex in range(len(arraycross)):
             for secondm in range(matrixindex, len(arraycross)):
-                if self.combv:
+                if self.combv and random.uniform(0, 1) < self.probc:
                     matrixmerged = self.comb(arraycross[matrixindex].matrix, arraycross[secondm].matrix)
-                    if  self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(matrixmerged):
+                    if self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(matrixmerged):
                         combinationsarr.append(Chromosome(matrixmerged))
-                if self.middle:
-                    matrixmerged = self.crossover_Middles(arraycross[matrixindex].matrix, arraycross[secondm].matrix)
+                    if random.uniform(0, 1) < self.probmu:
+                        matrixmerged = self.mutation(matrixmerged)
+                        if self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(
+                                matrixmerged) and self.is_all_values(matrixmerged):
+                            combinationsarr.append(Chromosome(matrixmerged))
+                if self.middle and self.middle and random.uniform(0, 1) < self.probm:
+                    matrixmerged = self.crossover_Middles(arraycross[matrixindex].matrix,
+                                                          arraycross[secondm].matrix)
                     if len(matrixmerged):
                         combinationsarr.append(Chromosome(matrixmerged))
+                    if random.uniform(0, 1) < self.probmu:
+                        matrixmerged = self.mutation(matrixmerged)
+                        if len(matrixmerged)>0 and self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(
+                                matrixmerged) and self.is_all_values(matrixmerged):
+                            combinationsarr.append(Chromosome(matrixmerged))
         combinationsarr = combinationsarr + arraycross
         combinationsarr.sort(key=lambda chrome: chrome.value)
         return combinationsarr
@@ -509,9 +524,10 @@ class GeneticAlgoritm:
             all = all[:self.inicial_population]
         return all[0].matrix
 
-
-GA = GeneticAlgoritm(20, 0.2, 150, 1, 1)
+GA = GeneticAlgoritm(20, 0.95, 0.95, 0.05, 150, 1, 1)
 routes =  GA.run()
+for index in range(routes):
+    routes[index].insert(0, initial_position_proof_case[index])
 print(routes)
 
 def plot_route(route):

@@ -195,7 +195,9 @@ class GeneticAlgoritm:
         row2 = np.random.randint(0, len(matrix))
 
         # Now we select two random positions in the rows
+        print(matrix[row1],"r1")
         pos1 = np.random.randint(0, len(matrix[row1]))
+        print(matrix[row2],"r2")
         pos2 = np.random.randint(0, len(matrix[row2]))
 
         # Now we swap the elements in the rows
@@ -490,25 +492,27 @@ class GeneticAlgoritm:
         for matrixindex in range(len(arraycross)):
             for secondm in range(matrixindex, len(arraycross)):
                 if self.combv and random.uniform(0, 1) < self.probc:
+                    print("comn")
                     matrixmerged = self.comb(arraycross[matrixindex].matrix, arraycross[secondm].matrix)
                     if self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(matrixmerged):
                         combinationsarr.append(Chromosome(matrixmerged))
-                        if random.uniform(0, 1) < self.probmu:
-                            matrixmerged = self.mutation(matrixmerged)
-                            if self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(
-                                    matrixmerged) and self.is_all_values(matrixmerged):
-                                combinationsarr.append(Chromosome(matrixmerged))
-                if self.combv and random.uniform(0, 1) < self.probm:
-                    if self.middle:
-                        matrixmerged = self.crossover_Middles(arraycross[matrixindex].matrix,
-                                                              arraycross[secondm].matrix)
-                        if len(matrixmerged):
-                            combinationsarr.append(Chromosome(matrixmerged))
                     if random.uniform(0, 1) < self.probmu:
                         matrixmerged = self.mutation(matrixmerged)
                         if self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(
                                 matrixmerged) and self.is_all_values(matrixmerged):
                             combinationsarr.append(Chromosome(matrixmerged))
+                if self.combv and random.uniform(0, 1) < self.probm:
+                    if self.middle:
+                        print("middle")
+                        matrixmerged = self.crossover_Middles(arraycross[matrixindex].matrix,
+                                                              arraycross[secondm].matrix)
+                        if len(matrixmerged)>0:
+                            combinationsarr.append(Chromosome(matrixmerged))
+                            if random.uniform(0, 1) < self.probmu:
+                                matrixmerged = self.mutation(matrixmerged)
+                                if self.bateryIsValid(matrixmerged) and self.matrix_capacity_valid(
+                                        matrixmerged) and self.is_all_values(matrixmerged):
+                                    combinationsarr.append(Chromosome(matrixmerged))
         combinationsarr = combinationsarr + arraycross
         combinationsarr.sort(key=lambda chrome: chrome.value)
         return combinationsarr
