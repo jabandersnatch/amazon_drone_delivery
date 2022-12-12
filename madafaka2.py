@@ -215,6 +215,7 @@ class GeneticAlgoritm:
 
         # Now we add the last elements to the rows
         new_matrix[row1].append(last_elements[row1])
+        new_matrix[row2].append(last_elements[row2])
 
         # Now we return the new_matrix
 
