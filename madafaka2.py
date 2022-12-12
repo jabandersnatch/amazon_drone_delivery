@@ -527,7 +527,7 @@ class GeneticAlgoritm:
 
 GA = GeneticAlgoritm(20, 0.95, 0.95, 0.05, 150, 1, 1)
 routes =  GA.run()
-for index in range(routes):
+for index in range(len(routes)):
     routes[index].insert(0, initial_position_proof_case[index])
 print(routes)
 
