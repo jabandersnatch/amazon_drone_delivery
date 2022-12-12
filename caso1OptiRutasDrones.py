@@ -7,6 +7,7 @@ import pandas as pd
 from pyomo.environ import *
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 from haversine import haversine, Unit
 
 import os
@@ -17,18 +18,10 @@ init_drone_pos = {}
 
 initial_position = 0
 
-'''
-Create a data dictionary with 7 nodes, 
-2 are a warehouse the other 5 are delivery points
-the location is set in the USA
-the demand is set in the same order as the nodes
-'''
-data = {'node_type': ['warehouse', 'delivery_point', 'delivery_point', 'delivery_point', 'delivery_point', 'delivery_point', 'warehouse'],
-        'latitude': [42.7173, 41.9128, 41.8781, 31.7604, 39.9526, 32.7767, 42.723],
-        'longitude': [-73.9897, -78.0060, -90.6298, -90.3698, -75.1652, -96.7970, -90.9301],
-        'demand': [0, 1, 1, 2, 2, 3, 0]}
-
-initial_position_proof_case = {0: 0, 1: 6}
+data = {'node_type': ['warehouse', 'delivery_point', 'delivery_point', 'delivery_point', 'delivery_point', 'warehouse','delivery_point', 'delivery_point', 'delivery_point', 'delivery_point', 'warehouse','delivery_point', 'delivery_point', 'delivery_point', 'delivery_point', 'warehouse','delivery_point', 'delivery_point', 'delivery_point', 'delivery_point'],
+        'latitude': [42.7173, 40.7128, 41.8781, 39.9526, 41.9072, 45.7545, 40.7128, 41.8781, 42.9526, 38.9072, 39.7545, 40.7128, 41.8781, 39.9526, 38.9072, 44.7545, 40.7128, 41.8781, 38.9526, 38.9072],
+        'longitude': [-73.9897, -74.0060, -80.6298, -75.1652, -79.0369, -78.5021, -78.1232, -77.0369, -77.5021, -77.1232, -77.5021, -76.1232, -73.0369, -76.5021, -79.1232, -82.5021, -72.1232, -78.0369, -77.5021, -75.1232],
+        'demand': [0, 1, 1, 3, 2, 0, 1, 3, 1, 2, 0, 1, 3, 1, 2, 0, 1, 3, 1, 2]}
 
 proof_case = pd.DataFrame(data)
 
@@ -41,39 +34,54 @@ for i in proof_case.index:
             init_drone_pos[i] = (proof_case['latitude'][i], proof_case['longitude'][i])
             init_drone_pos[j] = (proof_case['latitude'][j], proof_case['longitude'][j])
             distances_proof_case[i, j] = haversine(init_drone_pos[i], init_drone_pos[j], unit=Unit.MILES)
-           
+
         else:
             distances_proof_case[i, j] = 999
 # Calculate the mean distance between the nodes
 
 mean_distance_proof_case = np.round(np.mean(list(distances_proof_case.values())), 0)
 
-mean_battery_range = mean_distance_proof_case * 3
+mean_battery_range = mean_distance_proof_case * 4
 
-n_drones = 2
+n_drones = 5
 
-battery_range_case_2 = [0.5 * mean_battery_range, 1.5 * mean_battery_range]
+rand_percentages = [0.4, 0.6, 0.8, 1.0]
+battery_range_case_2 = []
+for i in range(n_drones):
+    battery_range_case_2.append(mean_battery_range * random.choice(rand_percentages))
+
 
 # Create the demand dictionary
 demand_proof_case = {}
 for index, row in proof_case.iterrows():
-    demand_proof_case[index] = (f'{row["node_type"]}_{index}',np.round(row['demand'],0))
+    demand_proof_case[index] = (f'{row["node_type"]}_{index}', np.round(row['demand'], 0))
 # Create the capacity dictionary
 
-# Find the mean demand  
+# Find the mean demand
 mean_demand_proof_case = 0
 for index, row in proof_case.iterrows():
     if row['node_type'] == 'delivery_point':
         mean_demand_proof_case += row['demand']
 
-mean_demand_proof_case = np.round(mean_demand_proof_case / len(proof_case[proof_case['node_type']== 'delivery_point']), 0)
+mean_demand_proof_case = np.round(mean_demand_proof_case / len(proof_case[proof_case['node_type'] == 'delivery_point']),
+                                  0)
 
-mean_capacity_dron = mean_demand_proof_case * 3
+mean_capacity_dron = mean_demand_proof_case * 4
 
-capacity_proof_case = [0.5 * mean_capacity_dron, 1.5 * mean_capacity_dron]
+capacity_proof_case = {}
+
+for i in range(n_drones):
+    capacity_proof_case[i] = mean_capacity_dron * random.choice(rand_percentages)
+
 
 warehouse_index_proof_case = proof_case[proof_case['node_type'] == 'warehouse'].index
 delivery_point_index_proof_case = proof_case[proof_case['node_type'] == 'delivery_point'].index
+size_delivery = len(delivery_point_index_proof_case)
+
+initial_position_proof_case = {}
+# Create the initial position dictionary for the drones
+for i in range(n_drones):
+    initial_position_proof_case[i] = random.choice(warehouse_index_proof_case)
 
 
 
@@ -131,13 +139,6 @@ def visitDeliveryPoints(Model, j):
     return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) == 1
 Model.visitDeliveryPoints = Constraint(delivery_point_index_proof_case, rule=visitDeliveryPoints)
 
-def allDeliveryPointsMustBeExited(Model, j):
-    if j in delivery_point_index_proof_case:
-        return sum(Model.x[i,j,d] for i in nodes_index for d in drone_set) == 1
-    else:
-        return Constraint.Skip
-    
-Model.allDeliveryPointsMustBeExited = Constraint(nodes_index, rule=allDeliveryPointsMustBeExited)
 
 '''
 For each drone they must visit the same number of delivery points as they exit
@@ -176,6 +177,7 @@ SolverFactory('couenne').solve(Model, tee=True)
 
 
 
+# Print the results
 Model.display()
 
 # Plot the routes of the drones in the proof case use a different color for each drone
@@ -183,7 +185,7 @@ Model.display()
 for d in drone_set:
     for i in nodes_index:
         for j in nodes_index:
-            if np.round(Model.x[i,j,d](),0) == 1:
+            if np.round(Model.x[i,j,d]()) == 1:
                 plt.plot([proof_case['latitude'][i], proof_case['latitude'][j]], [proof_case['longitude'][i], proof_case['longitude'][j]], color= 'C'+str(d))
                 # Plot the index of the node
                 plt.text(proof_case['latitude'][i], proof_case['longitude'][i], str(i))

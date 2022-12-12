@@ -79,7 +79,6 @@ class Chromosome:
 
     def calc_values(self) -> int:
         suma = 0
-        """print(self.matrix)"""
         for indexdrone in range(len(self.matrix)):
             suma += distances_proof_case[initial_position_proof_case[indexdrone], self.matrix[indexdrone][0]]
             for indexval in range(len(self.matrix[indexdrone]) - 1):
@@ -180,7 +179,6 @@ class GeneticAlgoritm:
         cant have the same element twice
         shuffle some the nodes between rows
         '''
-
         new_matrix = []
 
         # First remove the last element of each row
@@ -192,27 +190,13 @@ class GeneticAlgoritm:
         for i in range(len(matrix)):
             new_matrix.append(matrix[i])
 
-
-
         # Now we select two random rows
-
-        # if the matrix is empty we return the original matrix
 
         row1 = np.random.randint(0, len(matrix))
         row2 = np.random.randint(0, len(matrix))
 
-        # Now we check if the row aren't empty
-        # if they are we select another row
-
-        while len(matrix[row1]) == 0:
-            row1 = np.random.randint(0, len(matrix))
-
-        while len(matrix[row2]) == 0:
-            row2 = np.random.randint(0, len(matrix))
-
         # Now we select two random positions in the rows
         pos1 = np.random.randint(0, len(matrix[row1]))
-
         pos2 = np.random.randint(0, len(matrix[row2]))
 
         # Now we swap the elements in the rows
@@ -221,6 +205,7 @@ class GeneticAlgoritm:
         # Now we add the last elements to the rows
         new_matrix[row1].append(last_elements[row1])
         new_matrix[row2].append(last_elements[row2])
+
         # Now we return the new_matrix
 
         return new_matrix
