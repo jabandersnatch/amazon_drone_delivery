@@ -532,7 +532,7 @@ class GeneticAlgoritm:
             all = all[:self.inicial_population]
         return all[0].matrix
 
-GA = GeneticAlgoritm(20, 0.95, 0.95, 0.05, 150, 1, 1)
+GA = GeneticAlgoritm(40, 0.95, 0.95, 0.05, 200, 1, 1)
 routes =  GA.run()
 for index in range(len(routes)):
     routes[index].insert(0, initial_position_proof_case[index])
