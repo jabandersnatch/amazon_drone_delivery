@@ -195,6 +195,15 @@ class GeneticAlgoritm:
         row1 = np.random.randint(0, len(matrix))
         row2 = np.random.randint(0, len(matrix))
 
+        # now we check if the rows are empty
+        # if they are we return the original matrix
+
+        if len(matrix[row1]) == 0 or len(matrix[row2]) == 0:
+            return matrix
+
+
+
+
         # Now we select two random positions in the rows
         pos1 = np.random.randint(0, len(matrix[row1]))
         pos2 = np.random.randint(0, len(matrix[row2]))
