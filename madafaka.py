@@ -524,10 +524,13 @@ class GeneticAlgoritm:
         for index in range(self.generations):
             all = self.cruzamiento(all)
             all = all[:self.inicial_population]
-
+        return all[0].matrix
 
 GA = GeneticAlgoritm(20, 0.95, 0.95, 0.05, 150, 1, 1)
-GA.run()
+routes = GA.run()
+for index in range(len(routes)):
+    routes[index].insert(0, initial_position_proof_case[index])
+print(routes)
 
 
 def plot_route(route):
