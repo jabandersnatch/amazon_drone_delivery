@@ -553,32 +553,38 @@ def plot_route(route):
 
     then plot the lines between n4 n5 in another color
     '''
-    # create a new figure
-    fig = plt.figure()
-    # create a subplot
     # plot the nodes
     for i in range(len(route)):
         # get the x and y values
-        for j in range(len(route[i]) - 1):
+        for j in range(len(route[i])-1):
             # get the longitude and latitude of the node from the data dictionary
 
             # get the longitude key from Data
 
             y1 = data['longitude'][route[i][j]]
-            y2 = data['longitude'][route[i][j + 1]]
+            y2 = data['longitude'][route[i][j+1]]
             x1 = data['latitude'][route[i][j]]
-            x2 = data['latitude'][route[i][j + 1]]
+            x2 = data['latitude'][route[i][j+1]]
 
             # plot the nodes and then the lines between them
-            plt.plot([x1, x2], [y1, y2], color='C' + str(i), linewidth=2)
+            plt.plot([x1,x2],[y1,y2],color='C'+str(i),linewidth=2)
 
             # plot the nodes
-            plt.scatter(x1, y1, s=100)
-            plt.scatter(x2, y2, s=100)
-
+            colors = {'warehouse': 'black', 'delivery_point': 'red'}
+            # if is a warehouse then plot a black circle
+            # if is a delivery point then plot a diamond
+            if data['node_type'][route[i][j]] == 'warehouse':
+                plt.scatter(x1,y1,color=colors[data['node_type'][route[i][j]]],marker='o')
+            if data['node_type'][route[i][j+1]] == 'warehouse':
+                plt.scatter(x2,y2,color=colors[data['node_type'][route[i][j+1]]],marker='o')
+            if data['node_type'][route[i][j]] == 'delivery_point':
+                plt.scatter(x1,y1,color=colors[data['node_type'][route[i][j]]],marker='D')
+            if data['node_type'][route[i][j+1]] == 'delivery_point':
+                plt.scatter(x2,y2,color=colors[data['node_type'][route[i][j+1]]],marker='D')
             # add the node number to the plot
-            plt.annotate(route[i][j], (x1, y1), fontsize=12)
-            plt.annotate(route[i][j + 1], (x2, y2), fontsize=12)
+            plt.annotate(route[i][j],(x1,y1),fontsize=12)
+            plt.annotate(route[i][j+1],(x2,y2),fontsize=12)
+
 
     # Set y and x axis labels
     plt.xlabel('Longitude')
@@ -588,9 +594,7 @@ def plot_route(route):
 
     plt.title('Route')
 
+
     # show the plot
     plt.show()
-
-
-routes = [[0, 1, 3, 6, 5], [5, 4, 2, 5]]
 plot_route(routes)

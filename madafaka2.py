@@ -210,9 +210,6 @@ class GeneticAlgoritm:
         if len(matrix[row1]) == 0 or len(matrix[row2]) == 0:
             return matrix
 
-
-
-
         # Now we select two random positions in the rows
         pos1 = np.random.randint(0, len(matrix[row1]))
         pos2 = np.random.randint(0, len(matrix[row2]))
@@ -223,9 +220,7 @@ class GeneticAlgoritm:
         # Now we add the last elements to the rows
         new_matrix[row1].append(last_elements[row1])
         new_matrix[row2].append(last_elements[row2])
-
         # Now we return the new_matrix
-
         return new_matrix
 
     def cross_over_line(self,arr1, arr2, random_val1, random_val2, combination):
@@ -532,7 +527,7 @@ class GeneticAlgoritm:
             all = all[:self.inicial_population]
         return all[0].matrix
 
-GA = GeneticAlgoritm(40, 0.95, 0.95, 0.05, 200, 1, 1)
+GA = GeneticAlgoritm(100, 0.95, 0.95, 0.05, 400, 1, 1)
 routes =  GA.run()
 for index in range(len(routes)):
     routes[index].insert(0, initial_position_proof_case[index])
